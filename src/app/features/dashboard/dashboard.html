@@ -1,0 +1,72 @@
+<div class="min-h-screen bg-gray-50 p-4 md:p-8">
+  
+  <div class="max-w-6xl mx-auto">
+    <!-- Header Bereich -->
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold text-gray-800">Mein Dashboard 🏥</h1>
+      <p-button label="Neuer Termin" icon="pi pi-plus" severity="primary"></p-button>
+    </div>
+
+    <!-- PrimeNG Card als Container für die Tabelle -->
+    <p-card styleClass="shadow-sm border border-gray-200">
+      
+      <!-- PrimeNG Tabelle -->
+      <!-- [value]="appointments" verbindet die HTML-Tabelle mit unseren Java-Daten! -->
+      <!-- [loading]="isLoading" zeigt automatisch einen Lade-Spinner, solange die Daten laden -->
+      <p-table 
+        [value]="appointments" 
+        [loading]="isLoading" 
+        [paginator]="true" 
+        [rows]="5" 
+        [rowsPerPageOptions]="[5, 10, 20]"
+        responsiveLayout="scroll"
+        styleClass="p-datatable-striped">
+
+        <!-- Tabellen-Kopf (Header) -->
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="appointmentDate">Datum & Uhrzeit <p-sortIcon field="appointmentDate"></p-sortIcon></th>
+            <th>Arzt E-Mail</th>
+            <th>Patient E-Mail</th>
+            <th>Status</th>
+            <th>Aktion</th>
+          </tr>
+        </ng-template>
+
+        <!-- Tabellen-Körper (Zeilen) -->
+        <!-- let-appt bedeutet: Für jeden Termin in unserer Liste machen wir eine Tabellenzeile (<tr>) -->
+        <ng-template pTemplate="body" let-appt>
+          <tr>
+            <!-- Datum formatieren (Angular Pipe: datetime) -->
+            <td class="font-medium text-gray-900">{{ appt.appointmentDate | date:'dd.MM.yyyy - HH:mm' }} Uhr</td>
+            
+            <td class="text-gray-600">{{ appt.doctorEmail }}</td>
+            <td class="text-gray-600">{{ appt.patientEmail }}</td>
+            
+            <!-- Farbiger Status-Badge mit PrimeNG Tag -->
+            <td>
+              <p-tag [value]="appt.status" [severity]="getSeverity(appt.status)"></p-tag>
+            </td>
+
+            <!-- Aktions-Knopf (Noch ohne Funktion, das machen wir als Nächstes!) -->
+            <td>
+              <p-button icon="pi pi-cog" styleClass="p-button-rounded p-button-text p-button-secondary" pTooltip="Bearbeiten"></p-button>
+            </td>
+          </tr>
+        </ng-template>
+
+        <!-- Was passiert, wenn die Liste leer ist? -->
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="5" class="text-center p-4 text-gray-500">
+              Du hast momentan keine Termine.
+            </td>
+          </tr>
+        </ng-template>
+
+      </p-table>
+
+    </p-card>
+  </div>
+
+</div>
