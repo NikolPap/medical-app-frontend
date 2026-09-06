@@ -1,69 +1,51 @@
-<div class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-  
-  <!-- Το λευκό κουτί του Login (Card) -->
-  <div class="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
-    
-    <!-- Τίτλος -->
-    <h2 class="text-3xl font-bold text-center text-gray-800 mb-8">
-      Medical App Login
-    </h2>
+<div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
 
-    <!-- Η Φόρμα μας -->
-    <form class="space-y-6" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-      
-      <!-- Πεδίο Email -->
-      <div>
-        <label for="email" class="block text-sm font-medium text-gray-700">E-Mail Adresse</label>
-        <div class="mt-1">
-          <input 
-            id="email" 
-            name="email" 
-            formControlName="email"
-            type="email" 
-            required 
-            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            placeholder="arzt@klinik.de">
-        </div>
+  <!-- PrimeNG Card (Das weiße Kästchen mit Schatten) -->
+  <p-card header="Medical App Login" [style]="{ width: '100%', maxWidth: '400px' }" styleClass="shadow-lg">
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-5">
+
+      <!-- Email Feld -->
+      <div class="flex flex-col gap-2">
+        <label for="email" class="font-semibold text-gray-700">E-Mail Adresse</label>
+        <input
+          pInputText
+          id="email"
+          formControlName="email"
+          type="email"
+          placeholder="arzt@klinik.de"
+          class="w-full" />
       </div>
 
-      <!-- Πεδίο Password -->
-      <div>
-        <label for="password" class="block text-sm font-medium text-gray-700">Passwort</label>
-        <div class="mt-1">
-          <input 
-            id="password" 
-            formControlName="password"
-            name="password" 
-            type="password" 
-            required 
-            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            placeholder="••••••••">
-        </div>
+      <!-- Passwort Feld (PrimeNG Password mit Auge-Symbol zum Aufdecken!) -->
+      <div class="flex flex-col gap-2">
+        <label for="password" class="font-semibold text-gray-700">Passwort</label>
+        <p-password
+          id="password"
+          formControlName="password"
+          placeholder="••••••••"
+          [toggleMask]="true"
+          [feedback]="false"
+          styleClass="w-full"
+          inputStyleClass="w-full">
+        </p-password>
       </div>
 
-      <!-- Links & Checkbox (Προαιρετικά για ομορφιά) -->
-      <div class="flex items-center justify-between">
-        <div class="text-sm">
-          <a href="#" class="font-medium text-blue-600 hover:text-blue-500">
-            Passwort vergessen?
-          </a>
-        </div>
-        <div class="text-sm">
-          <a href="#" class="font-medium text-blue-600 hover:text-blue-500">
-            Neuen Account erstellen
-          </a>
-        </div>
+      <!-- Links -->
+      <div class="flex items-center justify-between text-sm mt-2">
+        <a href="#" class="font-medium text-blue-600 hover:underline">Passwort vergessen?</a>
       </div>
 
-      <!-- Το Κουμπί Login -->
-      <div>
-        <button 
-          type="submit" 
-          class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
-          Einloggen
-        </button>
-      </div>
-      
+      <!-- PrimeNG Button -->
+      <p-button
+        type="submit"
+        label="Einloggen"
+        icon="pi pi-sign-in"
+        styleClass="w-full mt-2"
+        [disabled]="loginForm.invalid">
+      </p-button>
+
     </form>
-  </div>
+  </p-card>
+
 </div>
