@@ -13,4 +13,26 @@ export class AuthService {
   login(loginData: any) : Observable<any>  {
     return this.http.post(`${this.API_URL}/login`, loginData)
   }
+
+  // POST-Request für die Registrierung
+  register(registerData: any): Observable<any> {
+    return this.http.post(`${this.API_URL}/register`, registerData);
+  }
+
+  // POST-Request für die E-Mail Verifizierung
+  verify(verifyData: any): Observable<any> {
+    return this.http.post(`${this.API_URL}/verify`, verifyData);
+  }
+
+  // POST-Request: "Ich habe mein Passwort vergessen" (Schickt die E-Mail)
+  forgotPassword(emailData: any): Observable<any> {
+    return this.http.post(`${this.API_URL}/forgot-password`, emailData);
+  }
+
+  // POST-Request: "Hier ist der Code und mein neues Passwort"
+  resetPassword(resetData: any): Observable<any> {
+    return this.http.post(`${this.API_URL}/reset-password`, resetData);
+  }
+
+  
 }
