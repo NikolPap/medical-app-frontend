@@ -1,0 +1,28 @@
+<div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+  
+  <p-card header="E-Mail bestätigen" [style]="{ width: '100%', maxWidth: '400px' }" styleClass="shadow-lg text-center">
+    
+    <p class="text-gray-600 mb-4">Bitte gib den 6-stelligen Code ein, den du per E-Mail erhalten hast.</p>
+
+    <form [formGroup]="verifyForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-5 text-left">
+      
+      <!-- Email -->
+      <div class="flex flex-col gap-2">
+        <label for="email" class="font-semibold text-gray-700">E-Mail Adresse</label>
+        <input pInputText id="email" formControlName="email" type="email" placeholder="max@muster.de" class="w-full" />
+      </div>
+
+      <!-- 6-stelliger Code -->
+      <div class="flex flex-col gap-2">
+        <label for="code" class="font-semibold text-gray-700">Bestätigungscode</label>
+        <!-- Wir nutzen pInputText, aber setzen maxlength auf 6 -->
+        <input pInputText id="code" formControlName="code" type="text" placeholder="123456" maxlength="6" class="w-full text-center text-xl tracking-widest font-bold" />
+      </div>
+
+      <!-- Button -->
+      <p-button type="submit" label="Konto freischalten" icon="pi pi-check" styleClass="w-full mt-2" [disabled]="verifyForm.invalid"></p-button>
+
+    </form>
+  </p-card>
+
+</div>
