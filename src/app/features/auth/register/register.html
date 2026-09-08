@@ -1,1 +1,45 @@
-<p>register works!</p>
+<div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+  
+  <p-card header="Neuen Account erstellen" [style]="{ width: '100%', maxWidth: '400px' }" styleClass="shadow-lg">
+    
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-5">
+      
+      <!-- Rolle (Dropdown) -->
+      <div class="flex flex-col gap-2">
+        <label class="font-semibold text-gray-700">Ich bin...</label>
+        <p-dropdown 
+          [options]="roles" 
+          formControlName="role" 
+          optionLabel="label" 
+          optionValue="value" 
+          styleClass="w-full">
+        </p-dropdown>
+      </div>
+
+      <!-- Email -->
+      <div class="flex flex-col gap-2">
+        <label for="email" class="font-semibold text-gray-700">E-Mail Adresse</label>
+        <input pInputText id="email" formControlName="email" type="email" placeholder="max@muster.de" class="w-full" />
+      </div>
+
+      <!-- Passwort -->
+      <div class="flex flex-col gap-2">
+        <label for="password" class="font-semibold text-gray-700">Passwort</label>
+        <p-password id="password" formControlName="password" placeholder="••••••••" [toggleMask]="true" [feedback]="true" styleClass="w-full" inputStyleClass="w-full"></p-password>
+        <small class="text-gray-500">Mindestens 6 Zeichen</small>
+      </div>
+
+      <!-- Button -->
+      <p-button type="submit" label="Registrieren" icon="pi pi-user-plus" styleClass="w-full mt-2" [disabled]="registerForm.invalid"></p-button>
+
+      <!-- Zurück zum Login -->
+      <div class="text-center text-sm mt-4">
+        <span class="text-gray-600">Hast du schon einen Account? </span>
+        <!-- routerLink bringt uns sofort zum Login! -->
+        <a routerLink="/login" class="font-medium text-blue-600 hover:underline cursor-pointer">Hier einloggen</a>
+      </div>
+
+    </form>
+  </p-card>
+
+</div>
