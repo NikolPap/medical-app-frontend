@@ -1,11 +1,10 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router'; // 1. IMPORT ROUTER HINZUGEFÜGT
+import { Router, RouterModule } from '@angular/router'; 
+
 
 import { AuthService } from '../../../core/services/auth'; 
-// (Optional) Wenn du das Interface hast, importiere es hier:
-// import { AuthResponse } from '../../../core/models/auth.model';
 
 // --- PRIMENG IMPORTS ---
 import { InputTextModule } from 'primeng/inputtext';
@@ -23,6 +22,7 @@ import { CardModule } from 'primeng/card';
     PasswordModule,
     ButtonModule,
     CardModule,
+    RouterModule
   ],
   templateUrl: './login.html',
   styleUrl: './login.scss',
