@@ -1,28 +1,27 @@
 <div class="min-h-screen bg-gray-50 p-4 md:p-8">
   
+  <p-toast></p-toast> 
+
   <div class="max-w-6xl mx-auto">
-    <!-- Header Bereich -->
+    
+    <!-- Header Bereich (Jetzt mit Logout!) -->
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold text-gray-800">Mein Dashboard 🏥</h1>
-      <p-button label="Neuer Termin" icon="pi pi-plus" severity="primary"></p-button>
+      
+      <div class="flex gap-3">
+        <p-button *ngIf="userRole === 'ROLE_PATIENT'" label="Neuer Termin" icon="pi pi-plus" severity="primary" (click)="openNewAppointmentDialog()"></p-button>
+         <!-- Nur für Ärzte -->
+        <p-button *ngIf="userRole === 'ROLE_DOCTOR'" label="Arbeitszeiten" icon="pi pi-clock" severity="info" (click)="openScheduleDialog()"></p-button>
+        <p-button label="Abmelden" icon="pi pi-sign-out" severity="secondary" [outlined]="true" (click)="logout()"></p-button>
+      </div>
     </div>
 
-    <!-- PrimeNG Card als Container für die Tabelle -->
+    <!-- PrimeNG Card -->
     <p-card styleClass="shadow-sm border border-gray-200">
       
-      <!-- PrimeNG Tabelle -->
-      <!-- [value]="appointments" verbindet die HTML-Tabelle mit unseren Java-Daten! -->
-      <!-- [loading]="isLoading" zeigt automatisch einen Lade-Spinner, solange die Daten laden -->
-      <p-table 
-        [value]="appointments" 
-        [loading]="isLoading" 
-        [paginator]="true" 
-        [rows]="5" 
-        [rowsPerPageOptions]="[5, 10, 20]"
-        responsiveLayout="scroll"
-        styleClass="p-datatable-striped">
-
-        <!-- Tabellen-Kopf (Header) -->
+      <!-- Tabelle -->
+      <p-table [value]="appointments" [loading]="isLoading" [paginator]="true" [rows]="5" responsiveLayout="scroll" styleClass="p-datatable-striped">
+        
         <ng-template pTemplate="header">
           <tr>
             <th pSortableColumn="appointmentDate">Datum & Uhrzeit <p-sortIcon field="appointmentDate"></p-sortIcon></th>
@@ -33,40 +32,150 @@
           </tr>
         </ng-template>
 
-        <!-- Tabellen-Körper (Zeilen) -->
-        <!-- let-appt bedeutet: Für jeden Termin in unserer Liste machen wir eine Tabellenzeile (<tr>) -->
         <ng-template pTemplate="body" let-appt>
           <tr>
-            <!-- Datum formatieren (Angular Pipe: datetime) -->
             <td class="font-medium text-gray-900">{{ appt.appointmentDate | date:'dd.MM.yyyy - HH:mm' }} Uhr</td>
-            
             <td class="text-gray-600">{{ appt.doctorEmail }}</td>
             <td class="text-gray-600">{{ appt.patientEmail }}</td>
-            
-            <!-- Farbiger Status-Badge mit PrimeNG Tag -->
             <td>
               <p-tag [value]="appt.status" [severity]="getSeverity(appt.status)"></p-tag>
             </td>
-
-            <!-- Aktions-Knopf (Noch ohne Funktion, das machen wir als Nächstes!) -->
             <td>
-              <p-button icon="pi pi-cog" styleClass="p-button-rounded p-button-text p-button-secondary" pTooltip="Bearbeiten"></p-button>
+              <p-button icon="pi pi-cog" styleClass="p-button-rounded p-button-text p-button-secondary" pTooltip="Bearbeiten" (click)="openStatusDialog(appt)"></p-button>
             </td>
           </tr>
         </ng-template>
 
-        <!-- Was passiert, wenn die Liste leer ist? -->
         <ng-template pTemplate="emptymessage">
           <tr>
-            <td colspan="5" class="text-center p-4 text-gray-500">
-              Du hast momentan keine Termine.
-            </td>
+            <td colspan="5" class="text-center p-4 text-gray-500">Du hast momentan keine Termine.</td>
           </tr>
         </ng-template>
 
       </p-table>
-
     </p-card>
   </div>
+
+  <!-- Pop-Up Dialog -->
+  <p-dialog header="Termin Status ändern" [modal]="true" [(visible)]="showStatusDialog" [style]="{width: '25rem'}">
+    <div class="flex flex-col gap-4">
+        <p class="text-gray-600">Was möchtest du mit diesem Termin tun?</p>
+        <p-button label="Termin BESTÄTIGEN" icon="pi pi-check" severity="success" class="w-full" (click)="changeStatus('CONFIRMED')"></p-button>
+        <p-button label="Termin STORNIEREN" icon="pi pi-times" severity="danger" class="w-full" (click)="changeStatus('CANCELLED')"></p-button>
+    </div>
+  </p-dialog>
+
+ <!-- POP-UP: NEUER TERMIN BUCHEN -->
+  <p-dialog header="Neuen Termin buchen" [modal]="true" [(visible)]="showNewAppointmentDialog" [style]="{width: '35rem'}">
+    
+    <form [formGroup]="newAppointmentForm" (ngSubmit)="bookAppointment()" class="flex flex-col gap-5 mt-4">
+      
+      <!-- Arzt auswählen -->
+      <div class="flex flex-col gap-2">
+        <label class="font-semibold text-gray-700">Wähle einen Arzt</label>
+        <p-dropdown 
+          [options]="doctors" 
+          formControlName="doctorId" 
+          placeholder="Arzt auswählen" 
+          optionLabel="label" 
+          optionValue="value" 
+          styleClass="w-full"
+          (onChange)="loadAvailableSlots()"> <!-- NEU: Lädt die Slots, wenn sich der Arzt ändert -->
+        </p-dropdown>
+      </div>
+
+      <!-- Nur DATUM auswählen -->
+      <div class="flex flex-col gap-2">
+        <label class="font-semibold text-gray-700">Datum wählen</label>
+        <p-calendar 
+          formControlName="appointmentDate" 
+          [minDate]="minDate"
+          appendTo="body"
+          placeholder="z.B. 24.12.2024" 
+          styleClass="w-full"
+          [readonlyInput]="true"
+          (onSelect)="loadAvailableSlots()"> <!-- NEU: Lädt die Slots, wenn man ein Datum anklickt -->
+        </p-calendar>
+      </div>
+
+      <!-- DIE VERFÜGBAREN UHRZEITEN (SLOTS) -->
+      <div *ngIf="availableSlots.length > 0" class="flex flex-col gap-2">
+        <label class="font-semibold text-gray-700">Verfügbare Uhrzeiten</label>
+        <div class="flex flex-wrap gap-2">
+          
+          <!-- Angular loop über alle Slots, die aus Java kommen! -->
+          <ng-container *ngFor="let time of availableSlots">
+            <p-button 
+              [label]="time" 
+              [severity]="selectedTimeSlot === time ? 'success' : 'secondary'" 
+              [outlined]="selectedTimeSlot !== time"
+              size="small"
+              (click)="selectTimeSlot(time)">
+            </p-button>
+          </ng-container>
+
+        </div>
+      </div>
+
+      <!-- Meldung, wenn keine Termine frei sind -->
+      <div *ngIf="availableSlots.length === 0 && newAppointmentForm.value.doctorId && newAppointmentForm.value.appointmentDate" class="text-red-500 text-sm italic">
+        An diesem Tag sind leider keine Termine mehr verfügbar.
+      </div>
+
+      <p-button type="submit" label="Termin verbindlich buchen" icon="pi pi-calendar-plus" styleClass="w-full mt-4" [disabled]="newAppointmentForm.invalid"></p-button>
+
+    </form>
+
+  </p-dialog>
+
+  <!-- POP-UP: ARBEITSZEITEN FESTLEGEN (NUR FÜR ÄRZTE) -->
+  <p-dialog header="Meine Arbeitszeiten" [modal]="true" [(visible)]="showScheduleDialog" [style]="{width: '35rem'}">
+    
+    <form [formGroup]="scheduleForm" (ngSubmit)="saveSchedule()" class="flex flex-col gap-4 mt-2">
+      
+      <div class="flex flex-col gap-2">
+        <label class="font-semibold text-gray-700">Wochentag</label>
+        <select formControlName="dayOfWeek" class="p-2 border border-gray-300 rounded-md">
+          <option value="MONDAY">Montag</option>
+          <option value="TUESDAY">Dienstag</option>
+          <option value="WEDNESDAY">Mittwoch</option>
+          <option value="THURSDAY">Donnerstag</option>
+          <option value="FRIDAY">Freitag</option>
+        </select>
+      </div>
+
+     <div class="flex gap-4">
+        <div class="flex flex-col gap-2 w-full">
+          <label class="font-semibold text-gray-700">Startzeit</label>
+          <!-- HTML5 Time Input (Besser und stabiler in Pop-ups!) -->
+          <input type="time" formControlName="startTime" class="p-2 border border-gray-300 rounded-md w-full" required>
+        </div>
+        <div class="flex flex-col gap-2 w-full">
+          <label class="font-semibold text-gray-700">Endzeit</label>
+          <input type="time" formControlName="endTime" class="p-2 border border-gray-300 rounded-md w-full" required>
+        </div>
+      </div>
+
+      <p-button type="submit" label="Speichern" icon="pi pi-save" styleClass="w-full mt-2" [disabled]="scheduleForm.invalid"></p-button>
+
+    </form>
+
+    <!-- Zeigt an, was schon gespeichert wurde -->
+    <div class="mt-6 border-t pt-4">
+      <h3 class="font-bold text-gray-800 mb-2">Mein aktueller Plan:</h3>
+      <ul class="text-sm text-gray-600">
+      <li *ngFor="let s of mySchedule" class="flex justify-between items-center py-2 border-b">
+          <div>
+            <span class="font-semibold inline-block w-24">{{ s.dayOfWeek }}</span>
+            <span>{{ s.startTime.substring(0,5) }} - {{ s.endTime.substring(0,5) }} Uhr</span>
+          </div>
+          <!-- NEU: Der Löschen-Button (Roter Mülleimer) -->
+          <p-button icon="pi pi-trash" severity="danger" [text]="true" [rounded]="true" (click)="deleteSchedule(s.id)"></p-button>
+        </li>
+      </ul>
+      <p *ngIf="mySchedule.length === 0" class="italic text-gray-400">Noch keine Zeiten eingetragen.</p>
+    </div>
+
+  </p-dialog>
 
 </div>
