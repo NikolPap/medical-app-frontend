@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { AppointmentService } from '../../core/services/appointment';
 import { Appointment } from '../../core/models/appointment.model'
 import { Router } from '@angular/router'; 
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators ,FormsModule} from '@angular/forms';
 import { ScheduleService } from '../../core/services/schedule';
 
 
@@ -21,7 +21,7 @@ import { CalendarModule } from 'primeng/calendar';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TableModule, TagModule, ButtonModule, CardModule, DialogModule, ToastModule, DropdownModule, CalendarModule],
+  imports: [CommonModule, ReactiveFormsModule, TableModule, TagModule, ButtonModule, CardModule, DialogModule, ToastModule, DropdownModule, CalendarModule, FormsModule],
   providers: [MessageService],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
@@ -43,8 +43,22 @@ export class DashboardComponent implements OnInit {
   showScheduleDialog: boolean = false;
   scheduleForm: FormGroup;
   mySchedule: any[] = []; 
-
-  constructor(
+  // Optionen für die Dauer eines Termins
+  durationOptions = [
+    { label: '10 Minuten', value: 10 },
+    { label: '15 Minuten', value: 15 },
+    { label: '20 Minuten', value: 20 },
+    { label: '30 Minuten', value: 30 },
+    { label: '40 Minuten', value: 40 },
+    { label: '45 Minuten', value: 45 },
+    { label: '60 Minuten', value: 60 }
+  ];
+  selectedDuration: number = 30;
+  editingScheduleId: number | null = null;
+  blockedDate: Date | null = null;
+  groupedSchedule: { dayOfWeek: string, shifts: any[] }[] = [];
+  
+constructor(
        private appointmentService: AppointmentService,
     private messageService: MessageService,
     private fb: FormBuilder, 
@@ -64,8 +78,7 @@ export class DashboardComponent implements OnInit {
     });
   }
 
- ngOnInit(): void {
-    // Finde heraus, ob wir Patient oder Arzt sind (aus dem Token)
+ngOnInit(): void {
     const token = localStorage.getItem('jwt_token');
     if (token) {
       const payload = JSON.parse(atob(token.split('.')[1]));
@@ -74,10 +87,8 @@ export class DashboardComponent implements OnInit {
 
     this.loadAppointments();
     
-    // Wenn wir ein Patient sind, laden wir die Liste der Ärzte für das Buchungs-Formular!
-    if (this.userRole === 'ROLE_PATIENT') {
-      this.loadDoctors();
-    }
+    // NEU: Wir laden die Doktoren-Liste IMMER (Für Patienten fürs Dropdown, für Ärzte für die Dauer)
+    this.loadDoctors(); 
   }
 
 
@@ -134,11 +145,27 @@ export class DashboardComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 
-  loadDoctors() {
+ loadDoctors() {
     this.appointmentService.getAllDoctors().subscribe({
       next: (docs) => {
-        // Wir machen die Daten schön für das PrimeNG Dropdown
-        this.doctors = docs.map(doc => ({ label: doc.email, value: doc.id }));
+        // Für Patienten: Dropdown füllen
+        this.doctors = docs.map((doc: any) => ({ label: doc.email, value: doc.id }));
+        
+        // NEU: Für Ärzte - Finde die EIGENE Dauer heraus und zeige sie an!
+        if (this.userRole === 'ROLE_DOCTOR') {
+          // Wir lesen die Email aus dem Token
+          const token = localStorage.getItem('jwt_token');
+          if (token) {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const myEmail = payload.sub; // 'sub' ist die Email im JWT
+            
+            // Finde den Arzt in der Liste
+            const me = docs.find((d: any) => d.email === myEmail);
+            if (me && me.slotDuration) {
+              this.selectedDuration = me.slotDuration; // Setzt das Dropdown auf den ECHTEN Wert!
+            }
+          }
+        }
       }
     });
   }
@@ -209,14 +236,55 @@ export class DashboardComponent implements OnInit {
     this.newAppointmentForm.patchValue({ appointmentTime: time }); // Ins Formular eintragen
   }
 
-  openScheduleDialog() {
-    this.showScheduleDialog = true;
-    this.loadMySchedule(); // Lade den bestehenden Plan, wenn das Fenster aufgeht
+openScheduleDialog() {
+    this.loadMySchedule(); 
+    
+    // Wir laden die Doktoren neu, um die GANZ AKTUELLE Termin-Dauer für diesen Arzt zu holen!
+    this.appointmentService.getAllDoctors().subscribe({
+      next: (docs) => {
+        const token = localStorage.getItem('jwt_token');
+        if (token) {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const myEmail = payload.sub; 
+          
+          const me = docs.find((d: any) => d.email === myEmail);
+          if (me && me.slotDuration) {
+            this.selectedDuration = me.slotDuration; // Setzt die echte Dauer aus der DB!
+          }
+        }
+        this.showScheduleDialog = true; // Öffnet das Fenster ERST, wenn die echten Daten da sind!
+      }
+    });
   }
 
   loadMySchedule() {
     this.scheduleService.getMySchedule().subscribe({
-      next: (data) => this.mySchedule = data,
+      next: (data) => {
+        this.mySchedule = data;
+
+        // 2. SORTIERUNG UND GRUPPIERUNG FÜR DAS UI
+        const dayOrder: { [key: string]: number } = {
+          'MONDAY': 1, 'TUESDAY': 2, 'WEDNESDAY': 3, 'THURSDAY': 4, 'FRIDAY': 5, 'SATURDAY': 6, 'SUNDAY': 7
+        };
+
+        // Wir gruppieren die Schichten nach Wochentag
+        const groupedMap = new Map<string, any[]>();
+        
+        data.forEach((s: any) => {
+          if (!groupedMap.has(s.dayOfWeek)) {
+            groupedMap.set(s.dayOfWeek, []);
+          }
+          groupedMap.get(s.dayOfWeek)?.push(s);
+        });
+
+        // Wir verwandeln die Map zurück in ein Array und sortieren die Tage!
+        this.groupedSchedule = Array.from(groupedMap.entries()).map(([day, shifts]) => {
+          // Sortiere die Schichten INHALB des Tages nach Startzeit
+          shifts.sort((a: any, b: any) => a.startTime.localeCompare(b.startTime));
+          return { dayOfWeek: day, shifts: shifts };
+        }).sort((a, b) => dayOrder[a.dayOfWeek] - dayOrder[b.dayOfWeek]);
+
+      },
       error: (err) => console.error("Fehler beim Laden des Plans", err)
     });
   }
@@ -224,16 +292,32 @@ export class DashboardComponent implements OnInit {
   saveSchedule() {
     if (this.scheduleForm.invalid) return;
 
-    // HTML5 <input type="time"> liefert direkt einen String wie "09:00"!
     const requestData = {
       dayOfWeek: this.scheduleForm.value.dayOfWeek,
-      startTime: this.scheduleForm.value.startTime, // Keine Konvertierung nötig!
+      startTime: this.scheduleForm.value.startTime, 
       endTime: this.scheduleForm.value.endTime
     };
 
+    // Wenn wir im "Edit-Modus" sind, löschen wir zuerst die alte Schicht
+    if (this.editingScheduleId !== null) {
+      this.scheduleService.deleteSchedule(this.editingScheduleId).subscribe({
+        next: () => {
+          this.editingScheduleId = null; // Edit-Modus beenden
+          this.sendSaveRequest(requestData); // Jetzt die neue speichern
+        }
+      });
+    } else {
+      // Normaler Speichern-Vorgang
+      this.sendSaveRequest(requestData);
+    }
+  }
+
+  // Hilfsmethode, um doppelten Code zu vermeiden
+  private sendSaveRequest(requestData: any) {
     this.scheduleService.saveSchedule(requestData).subscribe({
       next: () => {
         this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Arbeitszeit gespeichert!'});
+        this.scheduleForm.reset(); // Formular leeren
         this.loadMySchedule(); 
       },
       error: (err: any) => {
@@ -252,6 +336,58 @@ export class DashboardComponent implements OnInit {
         },
         error: (err: any) => {
           this.messageService.add({severity: 'error', summary: 'Fehler', detail: 'Konnte nicht gelöscht werden.'});
+        }
+      });
+    }
+  }
+
+  saveDuration() {
+    this.scheduleService.updateSlotDuration(this.selectedDuration).subscribe({
+      next: () => {
+        this.messageService.add({severity: 'success', summary: 'Erfolg', detail: `Dauer auf ${this.selectedDuration} Min. geändert!`});
+        // ERZWINGE UI-UPDATE: Lade die aktuelle Dauer direkt neu!
+        this.openScheduleDialog(); 
+      },
+      error: (err: any) => {
+        this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Konnte Dauer nicht ändern.'});
+      }
+    });
+  }
+
+editSchedule(schedule: any) {
+    // Wir merken uns, welche Schicht wir bearbeiten!
+    this.editingScheduleId = schedule.id; 
+
+    // Wir füllen das Formular
+    this.scheduleForm.patchValue({
+      dayOfWeek: schedule.dayOfWeek,
+      startTime: schedule.startTime.substring(0, 5), 
+      endTime: schedule.endTime.substring(0, 5)
+    });
+
+    this.messageService.add({severity: 'info', summary: 'Bearbeiten', detail: 'Bitte ändern und speichern!'});
+  }
+
+  blockDay() {
+    if (!this.blockedDate) return;
+
+    // Wir konvertieren das Datum sicher zu "YYYY-MM-DD"
+    const d = new Date(this.blockedDate);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
+
+    // Kurze Bestätigung, weil es ein drastischer Schritt ist
+    if (confirm(`Möchtest du den ${formattedDate} wirklich komplett blockieren?`)) {
+      this.appointmentService.blockEntireDay(formattedDate).subscribe({
+        next: () => {
+          this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Tag wurde blockiert!'});
+          this.blockedDate = null; // Kalender zurücksetzen
+          this.loadAppointments(); // Tabelle neu laden (um den Block-Termin zu sehen)
+        },
+        error: (err: any) => {
+          this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Tag konnte nicht blockiert werden.'});
         }
       });
     }
