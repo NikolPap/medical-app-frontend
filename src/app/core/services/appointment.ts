@@ -59,5 +59,15 @@ export class AppointmentService {
     // KEIN TOKEN NÖTIG! Das ist jetzt ein öffentlicher Endpoint.
     return this.http.get<string[]>(`${this.API_URL}/available-slots?doctorId=${doctorId}&date=${date}`);
   }
+
+    // 6. Blockiert einen ganzen Tag (Urlaub/Feiertag) für den Arzt
+  blockEntireDay(date: string): Observable<any> {
+    const token = localStorage.getItem('jwt_token');
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+    // POST request an /api/appointments/block-day?date=2024-12-25
+    return this.http.post(`${this.API_URL}/block-day?date=${date}`, {}, { headers });
+  }
   
 }
