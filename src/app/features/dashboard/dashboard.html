@@ -32,23 +32,29 @@
           </tr>
         </ng-template>
 
-        <ng-template pTemplate="body" let-appt>
-          <tr>
+       <ng-template pTemplate="body" let-appt>
+          <!-- Wir machen die Zeile leicht rötlich, wenn es ein Block-Termin ist -->
+          <tr [ngClass]="{'bg-red-50': appt.patientEmail === appt.doctorEmail}">
+            
             <td class="font-medium text-gray-900">{{ appt.appointmentDate | date:'dd.MM.yyyy - HH:mm' }} Uhr</td>
+            
             <td class="text-gray-600">{{ appt.doctorEmail }}</td>
-            <td class="text-gray-600">{{ appt.patientEmail }}</td>
+            
+            <!-- HIER IST DIE MAGIE FÜR DEN URLAUB -->
+            <td>
+              <span *ngIf="appt.patientEmail !== appt.doctorEmail" class="text-gray-600">{{ appt.patientEmail }}</span>
+              <p-tag *ngIf="appt.patientEmail === appt.doctorEmail" value="URLAUB / BLOCKIERT" severity="danger" icon="pi pi-ban"></p-tag>
+            </td>
+
             <td>
               <p-tag [value]="appt.status" [severity]="getSeverity(appt.status)"></p-tag>
             </td>
+            
+            <!-- Aktion -->
             <td>
               <p-button icon="pi pi-cog" styleClass="p-button-rounded p-button-text p-button-secondary" pTooltip="Bearbeiten" (click)="openStatusDialog(appt)"></p-button>
             </td>
-          </tr>
-        </ng-template>
 
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="5" class="text-center p-4 text-gray-500">Du hast momentan keine Termine.</td>
           </tr>
         </ng-template>
 
@@ -57,11 +63,25 @@
   </div>
 
   <!-- Pop-Up Dialog -->
-  <p-dialog header="Termin Status ändern" [modal]="true" [(visible)]="showStatusDialog" [style]="{width: '25rem'}">
-    <div class="flex flex-col gap-4">
-        <p class="text-gray-600">Was möchtest du mit diesem Termin tun?</p>
-        <p-button label="Termin BESTÄTIGEN" icon="pi pi-check" severity="success" class="w-full" (click)="changeStatus('CONFIRMED')"></p-button>
-        <p-button label="Termin STORNIEREN" icon="pi pi-times" severity="danger" class="w-full" (click)="changeStatus('CANCELLED')"></p-button>
+ <!-- POP-UP: Termin Status ändern ODER Urlaub stornieren -->
+  <p-dialog header="Bearbeiten" [modal]="true" [(visible)]="showStatusDialog" [style]="{width: '25rem'}">
+    
+    <div class="flex flex-col gap-4" *ngIf="selectedAppointment">
+        
+        <!-- Wenn es ein normaler Termin ist -->
+        <ng-container *ngIf="selectedAppointment.patientEmail !== selectedAppointment.doctorEmail">
+          <p class="text-gray-600">Was möchtest du mit diesem Termin tun?</p>
+          <p-button *ngIf="userRole === 'ROLE_DOCTOR'" label="Termin BESTÄTIGEN" icon="pi pi-check" severity="success" class="w-full" (click)="changeStatus('CONFIRMED')"></p-button>
+          <p-button label="Termin STORNIEREN" icon="pi pi-times" severity="danger" class="w-full" (click)="changeStatus('CANCELLED')"></p-button>
+        </ng-container>
+
+        <!-- Wenn es ein URLAUB / BLOCKIERT Termin ist -->
+        <ng-container *ngIf="selectedAppointment.patientEmail === selectedAppointment.doctorEmail">
+          <p class="text-gray-600">Das ist ein blockierter Tag (Urlaub).</p>
+          <p class="text-xs text-gray-500 mb-2">Wenn du ihn stornierst, können Patienten wieder Termine an diesem Tag buchen.</p>
+          <p-button label="Urlaub STORNIEREN (Tag freigeben)" icon="pi pi-unlock" severity="warning" class="w-full" (click)="changeStatus('CANCELLED')"></p-button>
+        </ng-container>
+
     </div>
   </p-dialog>
 
@@ -129,25 +149,69 @@
   </p-dialog>
 
   <!-- POP-UP: ARBEITSZEITEN FESTLEGEN (NUR FÜR ÄRZTE) -->
-  <p-dialog header="Meine Arbeitszeiten" [modal]="true" [(visible)]="showScheduleDialog" [style]="{width: '35rem'}">
+  <p-dialog header="Meine Einstellungen & Arbeitszeiten" [modal]="true" [(visible)]="showScheduleDialog" [style]="{width: '35rem'}">
     
-    <form [formGroup]="scheduleForm" (ngSubmit)="saveSchedule()" class="flex flex-col gap-4 mt-2">
+    <!-- NEU: EINSTELLUNGEN FÜR TERMIN-DAUER -->
+   <!-- EINSTELLUNGEN FÜR TERMIN-DAUER -->
+    <div class="bg-blue-50 p-4 rounded-md mb-6 border border-blue-100">
+      <div class="flex justify-between items-center mb-2">
+        <h3 class="font-bold text-blue-800"><i class="pi pi-clock mr-2"></i>Dauer eines Termins</h3>
+        <!-- NEU: Zeigt die AKTUELL gespeicherte Dauer an -->
+        <span class="text-xs font-bold bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
+          Aktuell: {{ selectedDuration }} Min
+        </span>
+      </div>
+      
+      <div class="flex gap-3 items-center">
+        <p-dropdown 
+          [options]="durationOptions" 
+          [(ngModel)]="selectedDuration" 
+          optionLabel="label" 
+          optionValue="value" 
+          styleClass="w-48">
+        </p-dropdown>
+        <p-button label="Dauer speichern" icon="pi pi-check" size="small" severity="info" (click)="saveDuration()"></p-button>
+      </div>
+      <p class="text-xs text-blue-600 mt-2">Hinweis: Dies betrifft nur zukünftige freie Zeitslots.</p>
+    </div>
+
+    <!-- NEU: TAG BLOCKIEREN (URLAUB/FEIERTAG) -->
+    <div class="bg-orange-50 p-4 rounded-md mb-6 border border-orange-100">
+      <h3 class="font-bold text-orange-800 mb-2"><i class="pi pi-calendar-times mr-2"></i>Urlaub / Feiertag eintragen</h3>
+      <div class="flex gap-3 items-center">
+        <p-calendar 
+          [(ngModel)]="blockedDate" 
+          [minDate]="minDate"
+          placeholder="Datum auswählen" 
+          appendTo="body" 
+          [readonlyInput]="true"
+          styleClass="w-full">
+        </p-calendar>
+        <p-button label="Tag blockieren" icon="pi pi-ban" size="small" severity="warning" (click)="blockDay()" [disabled]="!blockedDate"></p-button>
+      </div>
+      <p class="text-xs text-orange-600 mt-2">Blockiert den gesamten Tag, sodass Patienten keine Termine buchen können.</p>
+    </div>
+
+    <!-- DAS FORMULAR FÜR NEUE SCHICHTEN -->
+    <h3 class="font-bold text-gray-800 mb-3 border-b pb-2">Neue Arbeitszeit hinzufügen</h3>
+    <form [formGroup]="scheduleForm" (ngSubmit)="saveSchedule()" class="flex flex-col gap-4">
       
       <div class="flex flex-col gap-2">
         <label class="font-semibold text-gray-700">Wochentag</label>
-        <select formControlName="dayOfWeek" class="p-2 border border-gray-300 rounded-md">
+        <select formControlName="dayOfWeek" class="p-2 border border-gray-300 rounded-md bg-white">
           <option value="MONDAY">Montag</option>
           <option value="TUESDAY">Dienstag</option>
           <option value="WEDNESDAY">Mittwoch</option>
           <option value="THURSDAY">Donnerstag</option>
           <option value="FRIDAY">Freitag</option>
+          <option value="SATURDAY">Samstag</option>
+          <option value="SUNDAY">Sonntag</option>
         </select>
       </div>
 
-     <div class="flex gap-4">
+      <div class="flex gap-4">
         <div class="flex flex-col gap-2 w-full">
           <label class="font-semibold text-gray-700">Startzeit</label>
-          <!-- HTML5 Time Input (Besser und stabiler in Pop-ups!) -->
           <input type="time" formControlName="startTime" class="p-2 border border-gray-300 rounded-md w-full" required>
         </div>
         <div class="flex flex-col gap-2 w-full">
@@ -156,24 +220,45 @@
         </div>
       </div>
 
-      <p-button type="submit" label="Speichern" icon="pi pi-save" styleClass="w-full mt-2" [disabled]="scheduleForm.invalid"></p-button>
+      <p-button type="submit" label="Schicht hinzufügen" icon="pi pi-calendar-plus" styleClass="w-full mt-2" [disabled]="scheduleForm.invalid"></p-button>
 
     </form>
 
-    <!-- Zeigt an, was schon gespeichert wurde -->
-    <div class="mt-6 border-t pt-4">
-      <h3 class="font-bold text-gray-800 mb-2">Mein aktueller Plan:</h3>
-      <ul class="text-sm text-gray-600">
-      <li *ngFor="let s of mySchedule" class="flex justify-between items-center py-2 border-b">
-          <div>
-            <span class="font-semibold inline-block w-24">{{ s.dayOfWeek }}</span>
-            <span>{{ s.startTime.substring(0,5) }} - {{ s.endTime.substring(0,5) }} Uhr</span>
+    <!-- LISTE DER BEREITS GESPEICHERTEN SCHICHTEN -->
+    <div class="mt-8 border-t pt-4">
+      <h3 class="font-bold text-gray-800 mb-4">Mein aktueller Plan (Sortiert):</h3>
+      
+      <div *ngIf="mySchedule.length === 0" class="text-center p-4 bg-gray-50 rounded-md text-gray-500 italic">
+        Du hast noch keine Arbeitszeiten eingetragen.
+      </div>
+     <ul class="text-sm text-gray-700 flex flex-col gap-3">
+        <!-- Wir loopen jetzt durch die GRUPPIERTEN Tage -->
+        <li *ngFor="let dayGroup of groupedSchedule" class="bg-white border border-gray-200 rounded-md shadow-sm p-3">
+          
+          <div class="flex items-center gap-3 border-b pb-2 mb-2">
+            <!-- Wochentag nur EINMAL anzeigen -->
+            <span class="font-bold text-blue-700 bg-blue-100 px-3 py-1 rounded-full uppercase text-xs tracking-wider">
+              {{ dayGroup.dayOfWeek }}
+            </span>
           </div>
-          <!-- NEU: Der Löschen-Button (Roter Mülleimer) -->
-          <p-button icon="pi pi-trash" severity="danger" [text]="true" [rounded]="true" (click)="deleteSchedule(s.id)"></p-button>
+
+          <!-- Wir loopen durch alle Schichten dieses speziellen Tages -->
+          <div class="flex flex-col gap-1">
+            <div *ngFor="let s of dayGroup.shifts" class="flex justify-between items-center hover:bg-gray-50 p-1 rounded transition-colors">
+              <span class="font-medium text-gray-800 ml-2">
+                <i class="pi pi-clock mr-1 text-gray-400"></i> {{ s.startTime.substring(0,5) }} - {{ s.endTime.substring(0,5) }} Uhr
+              </span>
+              
+              <!-- Aktions-Knöpfe (Edit & Delete) für diese spezifische Schicht -->
+              <div class="flex gap-1">
+                <p-button icon="pi pi-pencil" severity="info" [text]="true" [rounded]="true" pTooltip="Bearbeiten" (click)="editSchedule(s)"></p-button>
+                <p-button icon="pi pi-trash" severity="danger" [text]="true" [rounded]="true" pTooltip="Löschen" (click)="deleteSchedule(s.id)"></p-button>
+              </div>
+            </div>
+          </div>
+
         </li>
       </ul>
-      <p *ngIf="mySchedule.length === 0" class="italic text-gray-400">Noch keine Zeiten eingetragen.</p>
     </div>
 
   </p-dialog>
