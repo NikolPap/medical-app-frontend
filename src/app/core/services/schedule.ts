@@ -30,10 +30,21 @@ export class ScheduleService {
   }
 
   // 3. Löscht eine Arbeitszeit (Schicht)
-  deleteSchedule(id: number): Observable<any> {
+ deleteSchedule(id: number): Observable<any> {
+    const token = localStorage.getItem('jwt_token');
+    const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
+
+    return this.http.delete(`${this.API_URL}/${id}`, { headers });
+  }
+
+  // 4. Ändert die Dauer eines Termins für den Arzt (z.B. 15, 30, 45 Min)
+  updateSlotDuration(minutes: number): Observable<any> {
     const token = localStorage.getItem('jwt_token');
     const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
     
-    return this.http.delete(`${this.API_URL}/${id}`, { headers });
+    // Der leere Body {} ist nötig, weil PUT normalerweise Daten sendet, wir aber nur Query-Parameter (?minutes=...) nutzen
+    return this.http.put(`${this.API_URL}/duration?minutes=${minutes}`, {}, { headers });
   }
+
+
 }
