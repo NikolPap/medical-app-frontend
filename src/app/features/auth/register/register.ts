@@ -31,7 +31,11 @@ export class RegisterComponent {
   constructor(private fb: FormBuilder, private authService: AuthService, private router: Router) {
     this.registerForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
+     password: ['', [
+        Validators.required, 
+        Validators.minLength(6),
+        Validators.pattern('(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{6,}') 
+      ]],
       role: ['ROLE_PATIENT', Validators.required] // Standardmäßig ist man Patient
     });
   }
