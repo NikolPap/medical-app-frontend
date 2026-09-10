@@ -1,42 +1,86 @@
-<div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+<div class="h-full w-full flex items-center justify-center p-4 min-h-[calc(100vh-140px)]">
   
-  <p-card header="Neuen Account erstellen" [style]="{ width: '100%', maxWidth: '400px' }" styleClass="shadow-lg">
+  <!-- PrimeNG Card: header="..." entfernt für zentrierten Titel -->
+  <p-card [style]="{ width: '100%', maxWidth: '400px' }" styleClass="shadow-lg pt-2 pb-4">
     
-    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-5">
+    <!-- ZENTRIERTER TITEL -->
+    <div class="text-center mb-8">
+      <h2 class="text-3xl font-extrabold text-gray-800">Account erstellen</h2>
+      <p class="text-sm text-gray-500 mt-2">Schließe dich unserer Plattform an.</p>
+    </div>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-6">
       
       <!-- Rolle (Dropdown) -->
       <div class="flex flex-col gap-2">
         <label class="font-semibold text-gray-700">Ich bin...</label>
+        <!-- Dropdown mit angepasstem Border-Styling -->
         <p-dropdown 
           [options]="roles" 
           formControlName="role" 
           optionLabel="label" 
           optionValue="value" 
-          styleClass="w-full">
+          styleClass="w-full rounded-lg border-gray-300 hover:border-gray-400">
         </p-dropdown>
       </div>
 
-      <!-- Email -->
+      <!-- Email Feld -->
       <div class="flex flex-col gap-2">
         <label for="email" class="font-semibold text-gray-700">E-Mail Adresse</label>
-        <input pInputText id="email" formControlName="email" type="email" placeholder="max@muster.de" class="w-full" />
+        <input 
+          pInputText 
+          id="email" 
+          formControlName="email" 
+          type="email" 
+          placeholder="max@muster.de" 
+          class="w-full p-3 rounded-lg border border-gray-300 hover:border-gray-400 focus:border-gray-800 outline-none transition-colors" />
       </div>
 
-      <!-- Passwort -->
-      <div class="flex flex-col gap-2">
+      <!-- Passwort Feld -->
+         <div class="flex flex-col gap-2">
         <label for="password" class="font-semibold text-gray-700">Passwort</label>
-        <p-password id="password" formControlName="password" placeholder="••••••••" [toggleMask]="true" [feedback]="true" styleClass="w-full" inputStyleClass="w-full"></p-password>
-        <small class="text-gray-500">Mindestens 6 Zeichen</small>
+        
+        <p-password 
+          id="password" 
+          formControlName="password" 
+          placeholder="••••••••" 
+          [toggleMask]="true" 
+          
+          [feedback]="true" 
+          promptLabel="Bitte Passwort eingeben"
+          weakLabel="Schwach"
+          mediumLabel="Mittel"
+          strongLabel="Stark"
+          
+          styleClass="w-full" 
+          inputStyleClass="w-full p-3 rounded-lg border border-gray-300 hover:border-gray-400 focus:border-gray-800 outline-none transition-colors">
+        </p-password>
+        
+        <!-- Fehlermeldung, wenn das Pattern nicht erfüllt ist -->
+        <small *ngIf="registerForm.get('password')?.errors?.['pattern'] && registerForm.get('password')?.touched" class="text-red-500">
+          Muss mind. 1 Großbuchstaben, 1 Kleinbuchstaben & 1 Zahl enthalten.
+        </small>
+        <!-- Standard-Hinweis, wenn noch kein Fehler da ist -->
+        <small *ngIf="!registerForm.get('password')?.errors?.['pattern']" class="text-gray-500">
+          Mindestens 6 Zeichen, inkl. Groß-, Kleinbuchstabe und Zahl.
+        </small>
       </div>
 
-      <!-- Button -->
-      <p-button type="submit" label="Registrieren" icon="pi pi-user-plus" styleClass="w-full mt-2" [disabled]="registerForm.invalid"></p-button>
+      <!-- Button (Dunkelgrau wie beim Login) -->
+      <p-button 
+        type="submit" 
+        label="Registrieren" 
+        icon="pi pi-user-plus" 
+        [disabled]="registerForm.invalid"
+        styleClass="w-full mt-4 p-3 rounded-lg shadow-md font-bold text-lg text-white bg-gray-800 hover:bg-gray-900 border-none transition-all">
+      </p-button>
 
       <!-- Zurück zum Login -->
-      <div class="text-center text-sm mt-4">
+      <div class="text-center text-sm mt-2">
         <span class="text-gray-600">Hast du schon einen Account? </span>
-        <!-- routerLink bringt uns sofort zum Login! -->
-        <a routerLink="/login" class="font-medium text-blue-600 hover:underline cursor-pointer">Hier einloggen</a>
+        <a routerLink="/login" class="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition-colors">
+          Hier einloggen
+        </a>
       </div>
 
     </form>
