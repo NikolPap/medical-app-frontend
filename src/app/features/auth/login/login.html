@@ -1,11 +1,17 @@
-<div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+<div class="h-full w-full flex items-center justify-center p-4 min-h-[calc(100vh-140px)]">
   
-  <!-- PrimeNG Card (Das weiße Kästchen mit Schatten) -->
-  <p-card header="Medical App Login" [style]="{ width: '100%', maxWidth: '400px' }" styleClass="shadow-lg">
+  <!-- PrimeNG Card: header="..." entfernt, damit wir den Titel selbst zentrieren können! -->
+  <p-card [style]="{ width: '100%', maxWidth: '400px' }" styleClass="shadow-lg pt-2 pb-4">
     
+    <!-- HIER IST DER ZENTRIERTE TITEL -->
+    <div class="text-center mb-8">
+      <h2 class="text-3xl font-extrabold text-gray-800">Login</h2>
+      <p class="text-sm text-gray-500 mt-2">Bitte gib deine Zugangsdaten ein.</p>
+    </div>
+
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-5">
       
-      <!-- Email Feld -->
+    <!-- Email Feld -->
       <div class="flex flex-col gap-2">
         <label for="email" class="font-semibold text-gray-700">E-Mail Adresse</label>
         <input 
@@ -14,33 +20,40 @@
           formControlName="email" 
           type="email" 
           placeholder="arzt@klinik.de" 
-          class="w-full" />
+          class="w-full p-3 rounded-lg border border-gray-300 hover:border-gray-400 focus:border-gray-800 outline-none transition-colors" />
       </div>
 
-      <!-- Passwort Feld (PrimeNG Password mit Auge-Symbol zum Aufdecken!) -->
+      <!-- Passwort Feld -->
       <div class="flex flex-col gap-2">
         <label for="password" class="font-semibold text-gray-700">Passwort</label>
-        <p-password 
-          id="password" 
-          formControlName="password" 
-          placeholder="••••••••" 
-          [toggleMask]="true" 
-          [feedback]="false" 
-          styleClass="w-full" 
-          inputStyleClass="w-full">
+        <p-password
+          id="password"
+          formControlName="password"
+          placeholder="••••••••"
+          [toggleMask]="true"
+          [feedback]="false"
+          styleClass="w-full"
+          inputStyleClass="w-full p-3 rounded-lg border border-gray-300 hover:border-gray-400 focus:border-gray-800 outline-none transition-colors">
         </p-password>
       </div>
 
-      <!-- Links (Passwort vergessen & Registrieren) -->
-      <div class="flex flex-col sm:flex-row items-center justify-between text-sm mt-2 gap-3 sm:gap-0">
-        <!-- HIER GEHT ES ZUM FORGOT-PASSWORD COMPONENT -->
-        <a routerLink="/forgot-password" class="font-medium text-blue-600 hover:underline cursor-pointer text-left w-full sm:w-auto">
-          Passwort vergessen?
-        </a>
+      <!-- Links (100% sauber getrennt durch CSS Grid) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 mb-2 w-full">
         
-        <a routerLink="/register" class="font-medium text-blue-600 hover:underline cursor-pointer text-right w-full sm:w-auto">
-          Neuen Account erstellen
-        </a>
+        <!-- Link: Passwort vergessen (Links ausgerichtet auf Desktop) -->
+        <div class="text-left">
+          <a routerLink="/forgot-password" class="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors block">
+            Passwort vergessen?
+          </a>
+        </div>
+        
+        <!-- Link: Account erstellen (Rechts ausgerichtet auf Desktop) -->
+        <div class="text-left sm:text-right">
+          <a routerLink="/register" class="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors block">
+            Neuen Account erstellen
+          </a>
+        </div>
+
       </div>
 
       <!-- PrimeNG Button -->
@@ -48,8 +61,8 @@
         type="submit" 
         label="Einloggen" 
         icon="pi pi-sign-in" 
-        styleClass="w-full mt-2" 
-        [disabled]="loginForm.invalid">
+        [disabled]="loginForm.invalid"
+        styleClass="w-full mt-6 p-3 rounded-lg shadow-md font-bold text-lg text-white bg-gray-800 hover:bg-gray-900 border-none transition-all">
       </p-button>
 
     </form>
