@@ -17,18 +17,23 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { DropdownModule } from 'primeng/dropdown';
 import { CalendarModule } from 'primeng/calendar';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api'; 
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TableModule, TagModule, ButtonModule, CardModule, DialogModule, ToastModule, DropdownModule, CalendarModule, FormsModule],
-  providers: [MessageService],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, TableModule, TagModule, ButtonModule, CardModule, 
+            DialogModule, ToastModule, DropdownModule, CalendarModule, ConfirmDialogModule], 
+  providers: [MessageService, ConfirmationService],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
 })
 export class DashboardComponent implements OnInit {
 
   appointments: Appointment[] = [];
+  filteredAppointments: Appointment[] = []; // NEU: Das sind die Termine, die WIRKLICH im Table angezeigt werden!
+  currentFilter: string = 'ALL'; // NEU: Welcher Filter ist gerade aktiv? ('ALL', 'CONFIRMED', 'PENDING', 'CANCELLED', 'PAST')
   isLoading: boolean = true;
 
   showStatusDialog: boolean = false;
@@ -59,8 +64,9 @@ export class DashboardComponent implements OnInit {
   groupedSchedule: { dayOfWeek: string, shifts: any[] }[] = [];
   
 constructor(
-       private appointmentService: AppointmentService,
+    private appointmentService: AppointmentService,
     private messageService: MessageService,
+    private confirmationService: ConfirmationService,
     private fb: FormBuilder, 
     private router: Router,
     private scheduleService: ScheduleService
@@ -97,6 +103,8 @@ ngOnInit(): void {
     this.appointmentService.getMyAppointments().subscribe({
       next: (data: Appointment[]) => {
         this.appointments = data;
+        this.applyFilter(this.currentFilter); 
+        
         this.isLoading = false;
       },
       // 2. TYPESCRIPT FIX (err: any)
@@ -326,19 +334,27 @@ openScheduleDialog() {
     });
   }
 
-  deleteSchedule(scheduleId: number) {
-    // Kurze Bestätigung, damit man nicht aus Versehen löscht!
-    if (confirm("Möchtest du diese Arbeitszeit wirklich löschen?")) {
-      this.scheduleService.deleteSchedule(scheduleId).subscribe({
-        next: () => {
-          this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Arbeitszeit gelöscht!'});
-          this.loadMySchedule(); // Liste neu laden
-        },
-        error: (err: any) => {
-          this.messageService.add({severity: 'error', summary: 'Fehler', detail: 'Konnte nicht gelöscht werden.'});
-        }
-      });
-    }
+ deleteSchedule(scheduleId: number) {
+    this.confirmationService.confirm({
+      message: 'Möchtest du diese Arbeitszeit wirklich löschen?',
+      header: 'Bestätigung',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Ja, Löschen',
+      rejectLabel: 'Abbrechen',
+      acceptButtonStyleClass: 'p-button-danger p-2 px-4 rounded-md',
+      rejectButtonStyleClass: 'p-button-text p-2 px-4 rounded-md',
+      accept: () => {
+        this.scheduleService.deleteSchedule(scheduleId).subscribe({
+          next: () => {
+            this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Arbeitszeit gelöscht!'});
+            this.loadMySchedule(); 
+          },
+          error: (err: any) => {
+            this.messageService.add({severity: 'error', summary: 'Fehler', detail: 'Konnte nicht gelöscht werden.'});
+          }
+        });
+      }
+    });
   }
 
   saveDuration() {
@@ -368,28 +384,66 @@ editSchedule(schedule: any) {
     this.messageService.add({severity: 'info', summary: 'Bearbeiten', detail: 'Bitte ändern und speichern!'});
   }
 
-  blockDay() {
+ blockDay() {
     if (!this.blockedDate) return;
 
-    // Wir konvertieren das Datum sicher zu "YYYY-MM-DD"
     const d = new Date(this.blockedDate);
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     const formattedDate = `${year}-${month}-${day}`;
 
-    // Kurze Bestätigung, weil es ein drastischer Schritt ist
-    if (confirm(`Möchtest du den ${formattedDate} wirklich komplett blockieren?`)) {
-      this.appointmentService.blockEntireDay(formattedDate).subscribe({
-        next: () => {
-          this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Tag wurde blockiert!'});
-          this.blockedDate = null; // Kalender zurücksetzen
-          this.loadAppointments(); // Tabelle neu laden (um den Block-Termin zu sehen)
-        },
-        error: (err: any) => {
-          this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Tag konnte nicht blockiert werden.'});
-        }
-      });
+    this.confirmationService.confirm({
+      message: `Möchtest du den ${formattedDate} wirklich komplett blockieren?`,
+      header: 'Urlaub eintragen',
+      icon: 'pi pi-info-circle',
+      acceptLabel: 'Ja, Tag blockieren',
+      rejectLabel: 'Abbrechen',
+      acceptButtonStyleClass: 'p-button-warning p-2 px-4 rounded-md',
+      rejectButtonStyleClass: 'p-button-text p-2 px-4 rounded-md',
+      accept: () => {
+        this.appointmentService.blockEntireDay(formattedDate).subscribe({
+          next: () => {
+            this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Tag wurde blockiert!'});
+            this.blockedDate = null; 
+            this.loadAppointments(); 
+          },
+          error: (err: any) => {
+            this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Tag konnte nicht blockiert werden.'});
+          }
+        });
+      }
+    });
+  }
+
+  // FILTER-LOGIK FÜR DIE 4 KARTEN
+  applyFilter(filterType: string) {
+    this.currentFilter = filterType;
+    const now = new Date();
+
+    if (filterType === 'ALL') {
+      // Zeige alle ZUKÜNFTIGEN Termine an (egal welcher Status)
+      this.filteredAppointments = this.appointments.filter(a => new Date(a.appointmentDate) >= now);
+    } 
+    else if (filterType === 'PAST') {
+      // Zeige NUR Termine aus der Vergangenheit (Vergangene)
+      this.filteredAppointments = this.appointments.filter(a => new Date(a.appointmentDate) < now);
+    } 
+    else {
+      // Zeige Termine basierend auf dem Status (CONFIRMED, PENDING, CANCELLED), 
+      // aber NUR wenn sie in der Zukunft liegen!
+      this.filteredAppointments = this.appointments.filter(a => 
+        a.status === filterType && new Date(a.appointmentDate) >= now
+      );
     }
   }
+
+  // Hilfsmethode, um die Anzahl für die Karten zu zählen
+  getCount(filterType: string): number {
+    const now = new Date();
+    if (filterType === 'ALL') return this.appointments.filter(a => new Date(a.appointmentDate) >= now).length;
+    if (filterType === 'PAST') return this.appointments.filter(a => new Date(a.appointmentDate) < now).length;
+    return this.appointments.filter(a => a.status === filterType && new Date(a.appointmentDate) >= now).length;
+  }
 }
+
