@@ -1,0 +1,15 @@
+<header class="bg-white shadow-sm border-b border-gray-200">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    
+    <!-- Logo & Name (Klickbar: Geht zum Dashboard, wenn eingeloggt, sonst zum Login) -->
+    <div class="flex items-center gap-3 cursor-pointer" [routerLink]="isLoggedIn() ? '/dashboard' : '/login'">
+      <img src="/medsync_logo.svg" alt="MedSync Logo" class="h-16 w-auto">
+    </div>
+
+    <!-- Rechts: Logout-Button (Nur sichtbar, wenn eingeloggt!) -->
+    <div *ngIf="isLoggedIn()">
+      <p-button label="Abmelden" icon="pi pi-sign-out" severity="secondary" [text]="true" (click)="logout()"></p-button>
+    </div>
+
+  </div>
+</header>
