@@ -1,1 +1,15 @@
-<router-outlet></router-outlet>
+<!-- Haupt-Container für die ganze App -->
+<div class="min-h-screen flex flex-col bg-gray-50">
+  
+  <!-- Das neue Header Component (ist jetzt überall!) -->
+  <app-header></app-header>
+
+  <!-- HIER WERDEN DIE SEITEN (Login, Dashboard etc.) GELADEN -->
+  <main class="flex-grow">
+    <router-outlet></router-outlet>
+  </main>
+
+  <!-- Das neue Footer Component (ist jetzt überall!) -->
+  <app-footer></app-footer>
+
+</div>
