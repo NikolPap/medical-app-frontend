@@ -1,26 +1,58 @@
-<div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+<div class="h-full w-full flex items-center justify-center p-4 min-h-[calc(100vh-140px)]">
   
-  <p-card header="E-Mail bestätigen" [style]="{ width: '100%', maxWidth: '400px' }" styleClass="shadow-lg text-center">
+  <!-- PrimeNG Card: header="..." entfernt für zentrierten Titel -->
+  <p-card [style]="{ width: '100%', maxWidth: '400px' }" styleClass="shadow-lg pt-2 pb-4">
     
-    <p class="text-gray-600 mb-4">Bitte gib den 6-stelligen Code ein, den du per E-Mail erhalten hast.</p>
+    <!-- ZENTRIERTER TITEL -->
+    <div class="text-center mb-8">
+      <h2 class="text-3xl font-extrabold text-gray-800">E-Mail bestätigen</h2>
+      <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+        Bitte gib den 6-stelligen Code ein, den du per E-Mail erhalten hast.
+      </p>
+    </div>
 
-    <form [formGroup]="verifyForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-5 text-left">
+    <form [formGroup]="verifyForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-6">
       
-      <!-- Email -->
-      <div class="flex flex-col gap-2">
+      <!-- Email Feld -->
+      <div class="flex flex-col gap-2 text-left">
         <label for="email" class="font-semibold text-gray-700">E-Mail Adresse</label>
-        <input pInputText id="email" formControlName="email" type="email" placeholder="max@muster.de" class="w-full" />
+        <input 
+          pInputText 
+          id="email" 
+          formControlName="email" 
+          type="email" 
+          placeholder="max@muster.de" 
+          class="w-full p-3 rounded-lg border border-gray-300 hover:border-gray-400 focus:border-gray-800 outline-none transition-colors" />
       </div>
 
-      <!-- 6-stelliger Code -->
-      <div class="flex flex-col gap-2">
+      <!-- 6-stelliger Code Feld -->
+      <div class="flex flex-col gap-2 text-left">
         <label for="code" class="font-semibold text-gray-700">Bestätigungscode</label>
-        <!-- Wir nutzen pInputText, aber setzen maxlength auf 6 -->
-        <input pInputText id="code" formControlName="code" type="text" placeholder="123456" maxlength="6" class="w-full text-center text-xl tracking-widest font-bold" />
+        <input 
+          pInputText 
+          id="code" 
+          formControlName="code" 
+          type="text" 
+          placeholder="123456" 
+          maxlength="6" 
+          class="w-full p-3 text-center text-xl tracking-widest font-bold rounded-lg border border-gray-300 hover:border-gray-400 focus:border-gray-800 outline-none transition-colors" />
       </div>
 
-      <!-- Button -->
-      <p-button type="submit" label="Konto freischalten" icon="pi pi-check" styleClass="w-full mt-2" [disabled]="verifyForm.invalid"></p-button>
+      <!-- Button (Dunkelgrau wie beim Login) -->
+      <p-button 
+        type="submit" 
+        label="Konto freischalten" 
+        icon="pi pi-check" 
+        [disabled]="verifyForm.invalid"
+        styleClass="w-full mt-4 p-3 rounded-lg shadow-md font-bold text-lg text-white bg-gray-800 hover:bg-gray-900 border-none transition-all">
+      </p-button>
+
+      <!-- Zurück zum Login -->
+      <div class="text-center text-sm mt-2">
+        <a routerLink="/login" class="font-medium text-gray-500 hover:text-gray-800 cursor-pointer transition-colors">
+          <i class="pi pi-arrow-left text-xs mr-1"></i> Zurück zum Login
+        </a>
+      </div>
 
     </form>
   </p-card>
