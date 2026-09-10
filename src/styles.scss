@@ -1,3 +1,24 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+/* NEU: Wir zwingen PrimeNG, UNSERE schöne Schriftart zu benutzen! */
+body, .p-component {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Optional: Macht die Scrollbar im Browser etwas moderner */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+}
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1; 
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8; 
+}
