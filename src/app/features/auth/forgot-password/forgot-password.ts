@@ -7,6 +7,7 @@ import { AuthService } from '../../../core/services/auth';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-forgot-password',
@@ -18,7 +19,7 @@ export class ForgotPasswordComponent {
   
   forgotForm: FormGroup;
 
-  constructor(private fb: FormBuilder, private authService: AuthService, private router: Router) {
+  constructor(private fb: FormBuilder, private authService: AuthService, private router: Router, private messageService: MessageService) {
     this.forgotForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]]
     });
@@ -26,15 +27,13 @@ export class ForgotPasswordComponent {
 
   onSubmit() {
     if (this.forgotForm.invalid) return;
-
     this.authService.forgotPassword(this.forgotForm.value).subscribe({
       next: () => {
-        alert("Falls die E-Mail existiert, wurde ein Code gesendet.");
-        // Leite automatisch zur Eingabe des neuen Passworts weiter!
+        this.messageService.add({severity: 'info', summary: 'Gesendet', detail: 'Falls die E-Mail existiert, wurde ein Code gesendet.'});
         this.router.navigate(['/reset-password']);
       },
       error: (err: any) => {
-        alert("Fehler: " + (err.error?.message || "Etwas ist schiefgelaufen"));
+        this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Etwas ist schiefgelaufen.'});
       }
     });
   }
