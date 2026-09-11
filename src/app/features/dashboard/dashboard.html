@@ -354,32 +354,52 @@
       </p>
     </div>
 
-    <!-- NEU: TAG BLOCKIEREN (URLAUB/FEIERTAG) -->
+   <!-- URLAUB / FEIERTAG EINTRAGEN -->
     <div class="bg-orange-50 p-4 rounded-md mb-6 border border-orange-100">
-      <h3 class="font-bold text-orange-800 mb-2">
-        <i class="pi pi-calendar-times mr-2"></i>Urlaub / Feiertag eintragen
-      </h3>
+      <h3 class="font-bold text-orange-800 mb-2"><i class="pi pi-calendar-times mr-2"></i>Urlaub / Feiertag</h3>
+      
       <div class="flex gap-3 items-center">
-        <p-calendar
-          [(ngModel)]="blockedDate"
+       <p-calendar 
+          [(ngModel)]="blockedDate" 
           [minDate]="minDate"
-          placeholder="Datum auswählen"
-          appendTo="body"
+          placeholder="Datum / Zeitraum auswählen" 
+          appendTo="body" 
           [readonlyInput]="true"
-          styleClass="w-full"
-        >
+          selectionMode="range" 
+          styleClass="w-full">
         </p-calendar>
-        <p-button
-          label="Tag blockieren"
-          icon="pi pi-ban"
-          (click)="blockDay()"
-          [disabled]="!blockedDate"
-          styleClass="p-2 px-4 rounded-lg font-bold text-white bg-orange-500 hover:bg-orange-600 border-none transition-all"
-        ></p-button>
+        <p-button label="Tag blockieren" icon="pi pi-ban" size="small" severity="warning" (click)="blockDay()" [disabled]="!blockedDate"           styleClass="p-2 px-4 rounded-lg font-bold text-white bg-orange-500 hover:bg-orange-600 border-none transition-all"></p-button>
       </div>
-      <p class="text-xs text-orange-600 mt-2">
-        Blockiert den gesamten Tag, sodass Patienten keine Termine buchen können.
-      </p>
+
+ <!-- LISTE DER BEREITS GESPEICHERTEN URLAUBE -->
+      <div class="mt-4" *ngIf="groupedHolidays.length > 0">
+        <h4 class="font-bold text-orange-700 text-sm mb-2">Meine gebuchten Urlaube:</h4>
+        
+        <ul class="text-sm text-gray-700 flex flex-col gap-2 max-h-48 overflow-y-auto pr-2">
+          <!-- WICHTIG: Wir loopen jetzt über groupedHolidays! -->
+          <li *ngFor="let group of groupedHolidays" class="flex justify-between items-center py-2 px-3 bg-white border border-orange-200 rounded-md shadow-sm">
+            
+            <div class="flex items-center gap-2">
+              <i class="pi pi-calendar text-orange-500"></i>
+              
+              <!-- Wenn Start- und Enddatum gleich sind (Nur 1 Tag) -->
+              <span class="font-medium text-gray-800" *ngIf="group.startDate === group.endDate">
+                {{ group.startDate | date:'dd.MM.yyyy' }}
+              </span>
+
+              <!-- Wenn es ein Zeitraum ist (Von - Bis) -->
+              <span class="font-medium text-gray-800" *ngIf="group.startDate !== group.endDate">
+                {{ group.startDate | date:'dd.MM.yyyy' }} <span class="text-gray-400 mx-1">bis</span> {{ group.endDate | date:'dd.MM.yyyy' }}
+              </span>
+            </div>
+
+            <!-- Mülleimer-Button übergibt jetzt das ARRAY mit IDs! -->
+            <p-button icon="pi pi-trash" severity="danger" [text]="true" [rounded]="true" pTooltip="Urlaub löschen" (click)="deleteHoliday(group.ids)"></p-button>
+          </li>
+          
+        </ul>
+      </div>
+
     </div>
 
     <!-- DAS FORMULAR FÜR NEUE SCHICHTEN -->
