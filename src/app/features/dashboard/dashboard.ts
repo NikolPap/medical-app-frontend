@@ -5,6 +5,7 @@ import { Appointment } from '../../core/models/appointment.model'
 import { Router } from '@angular/router'; 
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators ,FormsModule} from '@angular/forms';
 import { ScheduleService } from '../../core/services/schedule';
+import { HolidayService } from '../../core/services/holiday';
 
 
 // PRIMENG IMPORTS
@@ -25,7 +26,7 @@ import { ConfirmationService } from 'primeng/api';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule, TableModule, TagModule, ButtonModule, CardModule, 
             DialogModule, ToastModule, DropdownModule, CalendarModule, ConfirmDialogModule], 
-  providers: [MessageService, ConfirmationService],
+  providers: [ ConfirmationService],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
 })
@@ -35,7 +36,8 @@ export class DashboardComponent implements OnInit {
   filteredAppointments: Appointment[] = []; // NEU: Das sind die Termine, die WIRKLICH im Table angezeigt werden!
   currentFilter: string = 'ALL'; // NEU: Welcher Filter ist gerade aktiv? ('ALL', 'CONFIRMED', 'PENDING', 'CANCELLED', 'PAST')
   isLoading: boolean = true;
-
+  myHolidays: any[] = []; // Die rohen Daten aus Java
+  groupedHolidays: any[] = [];
   showStatusDialog: boolean = false;
   selectedAppointment: Appointment | null = null;
   showNewAppointmentDialog: boolean = false;
@@ -48,6 +50,7 @@ export class DashboardComponent implements OnInit {
   showScheduleDialog: boolean = false;
   scheduleForm: FormGroup;
   mySchedule: any[] = []; 
+  blockedDate: Date | Date[] | null = null;
   // Optionen für die Dauer eines Termins
   durationOptions = [
     { label: '10 Minuten', value: 10 },
@@ -60,7 +63,6 @@ export class DashboardComponent implements OnInit {
   ];
   selectedDuration: number = 30;
   editingScheduleId: number | null = null;
-  blockedDate: Date | null = null;
   groupedSchedule: { dayOfWeek: string, shifts: any[] }[] = [];
   
 constructor(
@@ -69,7 +71,8 @@ constructor(
     private confirmationService: ConfirmationService,
     private fb: FormBuilder, 
     private router: Router,
-    private scheduleService: ScheduleService
+    private scheduleService: ScheduleService,
+    private holidayService: HolidayService
   ) {
       this.newAppointmentForm = this.fb.group({
       doctorId: [null, Validators.required],
@@ -384,55 +387,159 @@ editSchedule(schedule: any) {
     this.messageService.add({severity: 'info', summary: 'Bearbeiten', detail: 'Bitte ändern und speichern!'});
   }
 
+  // --- URLAUB (HOLIDAYS) LOGIK ---
+
+ loadMyHolidays() {
+    this.holidayService.getMyHolidays().subscribe({
+      next: (data) => {
+        this.myHolidays = data; // Originaldaten behalten für Löschungen
+        this.groupHolidays(data); // NEU: Ruf die Gruppierungs-Logik auf!
+      },
+      error: (err) => console.error("Fehler beim Laden der Urlaube", err)
+    });
+  }
+
+  // NEUE METHODE: Fasst aufeinanderfolgende Tage zu einer "Range" zusammen
+  groupHolidays(holidays: any[]) {
+    if (!holidays || holidays.length === 0) {
+      this.groupedHolidays = [];
+      return;
+    }
+
+    // Wir stellen sicher, dass sie nach Datum sortiert sind
+    const sorted = [...holidays].sort((a, b) => new Date(a.holidayDate).getTime() - new Date(b.holidayDate).getTime());
+
+    const grouped = [];
+    let currentGroup = { 
+      startDate: sorted[0].holidayDate, 
+      endDate: sorted[0].holidayDate, 
+      ids: [sorted[0].id] // Wir müssen ALLE IDs der Gruppe speichern, um sie später löschen zu können!
+    };
+
+    for (let i = 1; i < sorted.length; i++) {
+      const current = sorted[i];
+      const previousDate = new Date(sorted[i - 1].holidayDate);
+      const currentDate = new Date(current.holidayDate);
+
+      // Differenz in Tagen berechnen
+      const diffTime = Math.abs(currentDate.getTime() - previousDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) {
+        // Es ist der exakt nächste Tag -> Zur Gruppe hinzufügen!
+        currentGroup.endDate = current.holidayDate;
+        currentGroup.ids.push(current.id);
+      } else {
+        // Es ist eine Lücke -> Gruppe abschließen und neue anfangen
+        grouped.push(currentGroup);
+        currentGroup = { startDate: current.holidayDate, endDate: current.holidayDate, ids: [current.id] };
+      }
+    }
+    grouped.push(currentGroup); // Letzte Gruppe hinzufügen
+
+    this.groupedHolidays = grouped; // Das UI liest jetzt DIESE Liste!
+  }
+
  blockDay() {
     if (!this.blockedDate) return;
 
-    const d = new Date(this.blockedDate);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const formattedDate = `${year}-${month}-${day}`;
+    // Wir prüfen, ob der Arzt einen Bereich (Range) oder nur einen Tag gewählt hat
+    let startDate: Date;
+    let endDate: Date;
+
+    if (Array.isArray(this.blockedDate)) {
+      startDate = this.blockedDate[0];
+      endDate = this.blockedDate[1] ? this.blockedDate[1] : this.blockedDate[0]; // Falls er nur 1 Klick gemacht hat
+    } else {
+      startDate = this.blockedDate;
+      endDate = this.blockedDate;
+    }
+
+    // Datum formatieren
+    const format = (d: Date) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const startStr = format(startDate);
+    const endStr = format(endDate);
+
+    let message = startStr === endStr 
+        ? `Möchtest du den ${startStr} wirklich blockieren?` 
+        : `Möchtest du den Zeitraum von ${startStr} bis ${endStr} wirklich blockieren?`;
 
     this.confirmationService.confirm({
-      message: `Möchtest du den ${formattedDate} wirklich komplett blockieren?`,
+      message: message,
       header: 'Urlaub eintragen',
       icon: 'pi pi-info-circle',
-      acceptLabel: 'Ja, Tag blockieren',
+      acceptLabel: 'Ja, blockieren',
       rejectLabel: 'Abbrechen',
       acceptButtonStyleClass: 'p-button-warning p-2 px-4 rounded-md',
       rejectButtonStyleClass: 'p-button-text p-2 px-4 rounded-md',
       accept: () => {
-        this.appointmentService.blockEntireDay(formattedDate).subscribe({
+        this.holidayService.addHolidayRange(startStr, endStr).subscribe({
           next: () => {
-            this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Tag wurde blockiert!'});
+            this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Urlaub wurde eingetragen!'});
             this.blockedDate = null; 
-            this.loadAppointments(); 
+            this.loadMyHolidays(); 
           },
           error: (err: any) => {
-            this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Tag konnte nicht blockiert werden.'});
+            this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Konnte nicht gespeichert werden.'});
           }
         });
       }
     });
   }
 
-  // FILTER-LOGIK FÜR DIE 4 KARTEN
+ deleteHoliday(holidayIds: number[]) {
+    this.confirmationService.confirm({
+      message: 'Möchtest du diesen Urlaubszeitraum wirklich löschen?',
+      header: 'Urlaub löschen',
+      icon: 'pi pi-trash',
+      acceptLabel: 'Ja, Löschen',
+      rejectLabel: 'Abbrechen',
+      acceptButtonStyleClass: 'p-button-danger p-2 px-4 rounded-md',
+      rejectButtonStyleClass: 'p-button-text p-2 px-4 rounded-md',
+      accept: () => {
+        // Wir loopen durch alle IDs und löschen sie (Mit RxJs forkJoin wäre schöner, aber so ist es narrensicher)
+        let deletedCount = 0;
+        holidayIds.forEach(id => {
+          this.holidayService.deleteHoliday(id).subscribe({
+            next: () => {
+              deletedCount++;
+              // Wenn alle gelöscht sind -> UI aktualisieren
+              if (deletedCount === holidayIds.length) {
+                this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Urlaubszeitraum gelöscht!'});
+                this.loadMyHolidays(); 
+              }
+            },
+            error: (err: any) => console.error("Fehler beim Löschen:", err)
+          });
+        });
+      }
+    });
+  }
+
+ // FILTER-LOGIK FÜR DIE 4 KARTEN
   applyFilter(filterType: string) {
     this.currentFilter = filterType;
     const now = new Date();
 
+    // 1. Wir filtern zuerst den "Müll" (stornierte Urlaube) komplett aus der Liste heraus!
+    const validAppointments = this.appointments.filter(a => 
+      !(a.patientEmail === a.doctorEmail && a.status === 'CANCELLED')
+    );
+
     if (filterType === 'ALL') {
-      // Zeige alle ZUKÜNFTIGEN Termine an (egal welcher Status)
-      this.filteredAppointments = this.appointments.filter(a => new Date(a.appointmentDate) >= now);
+      this.filteredAppointments = validAppointments.filter(a => new Date(a.appointmentDate) >= now);
     } 
     else if (filterType === 'PAST') {
-      // Zeige NUR Termine aus der Vergangenheit (Vergangene)
-      this.filteredAppointments = this.appointments.filter(a => new Date(a.appointmentDate) < now);
+      this.filteredAppointments = validAppointments.filter(a => new Date(a.appointmentDate) < now);
     } 
     else {
-      // Zeige Termine basierend auf dem Status (CONFIRMED, PENDING, CANCELLED), 
-      // aber NUR wenn sie in der Zukunft liegen!
-      this.filteredAppointments = this.appointments.filter(a => 
+      this.filteredAppointments = validAppointments.filter(a => 
         a.status === filterType && new Date(a.appointmentDate) >= now
       );
     }
@@ -441,9 +548,15 @@ editSchedule(schedule: any) {
   // Hilfsmethode, um die Anzahl für die Karten zu zählen
   getCount(filterType: string): number {
     const now = new Date();
-    if (filterType === 'ALL') return this.appointments.filter(a => new Date(a.appointmentDate) >= now).length;
-    if (filterType === 'PAST') return this.appointments.filter(a => new Date(a.appointmentDate) < now).length;
-    return this.appointments.filter(a => a.status === filterType && new Date(a.appointmentDate) >= now).length;
+    
+    // Auch hier: Wir ignorieren die stornierten Urlaube beim Zählen!
+    const validAppointments = this.appointments.filter(a => 
+      !(a.patientEmail === a.doctorEmail && a.status === 'CANCELLED')
+    );
+
+    if (filterType === 'ALL') return validAppointments.filter(a => new Date(a.appointmentDate) >= now).length;
+    if (filterType === 'PAST') return validAppointments.filter(a => new Date(a.appointmentDate) < now).length;
+    return validAppointments.filter(a => a.status === filterType && new Date(a.appointmentDate) >= now).length;
   }
 }
 
