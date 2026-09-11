@@ -11,6 +11,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-login',
@@ -33,7 +34,8 @@ export class Login {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router // 2. ROUTER IM KONSTRUKTOR HINZUGEFÜGT
+    private router: Router,
+     private messageService: MessageService
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -42,24 +44,17 @@ export class Login {
   }
 
   onSubmit() {
-    if (this.loginForm.invalid) {
-      console.error('Formular ist ungültig!');
-      return;
-    }
-
+    if (this.loginForm.invalid) return;
     this.authService.login(this.loginForm.value).subscribe({
-      // 3. Typ 'any' entfernt (Wenn du das Model nicht importiert hast, kannst du es weglassen)
-      next: (response) => {
-        console.log('Erfolgreich eingeloggt! Hier ist die Antwort von Spring Boot:', response);
+      next: (response: any) => {
         localStorage.setItem('jwt_token', response.token);
-        
-        // 4. WEITERLEITUNG ZUM DASHBOARD (Das hat gefehlt!)
+        this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Login erfolgreich!'});
         this.router.navigate(['/dashboard']);
       },
-      error: (err) => {
-        console.error('Fehler beim Login:', err);
-        alert('Fehler: ' + err.error?.message);
+      error: (err: any) => {
+        this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Login fehlgeschlagen.'});
       },
     });
   }
+
 }
