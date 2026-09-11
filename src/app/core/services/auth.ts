@@ -34,5 +34,9 @@ export class AuthService {
     return this.http.post(`${this.API_URL}/reset-password`, resetData);
   }
 
+  // NEU: Prüft, ob der 6-stellige Code korrekt ist
+  verifyResetCode(data: any): Observable<any> {
+    return this.http.post(`${this.API_URL}/verify-reset-code`, data);
+  }
   
 }
