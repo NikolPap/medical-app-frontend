@@ -64,6 +64,25 @@
         <small *ngIf="!registerForm.get('password')?.errors?.['pattern']" class="text-gray-500">
           Mindestens 6 Zeichen, inkl. Groß-, Kleinbuchstabe und Zahl.
         </small>
+
+        <!-- NEU: Passwort wiederholen -->
+      <div class="flex flex-col gap-2 text-left">
+        <label for="confirmPassword" class="font-semibold text-gray-700">Passwort wiederholen</label>
+        <p-password 
+          id="confirmPassword" 
+          formControlName="confirmPassword" 
+          placeholder="••••••••" 
+          [toggleMask]="true" 
+          [feedback]="false" 
+          styleClass="w-full" 
+          inputStyleClass="w-full p-3 rounded-lg border border-gray-300 hover:border-gray-400 focus:border-gray-800 outline-none transition-colors">
+        </p-password>
+        
+        <!-- Fehlermeldung, wenn Passwörter nicht übereinstimmen -->
+        <small *ngIf="registerForm.errors?.['passwordMismatch'] && registerForm.get('confirmPassword')?.touched" class="text-red-500 font-bold">
+          Die Passwörter stimmen nicht überein!
+        </small>
+      </div>
       </div>
 
       <!-- Button (Dunkelgrau wie beim Login) -->
