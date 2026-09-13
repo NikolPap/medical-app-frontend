@@ -186,7 +186,6 @@
   </div>
 
   <!-- Pop-Up Dialog -->
-  <!-- POP-UP: Termin Status ändern ODER Urlaub stornieren -->
   <p-dialog
     header="Bearbeiten"
     [modal]="true"
@@ -315,62 +314,69 @@
     </form>
   </p-dialog>
 
-  <!-- POP-UP: ARBEITSZEITEN FESTLEGEN (NUR FÜR ÄRZTE) -->
-  <p-dialog
-    header="Meine Einstellungen & Arbeitszeiten"
-    [modal]="true"
-    [(visible)]="showScheduleDialog"
-    [style]="{ width: '35rem' }"
-  >
-    <!-- NEU: EINSTELLUNGEN FÜR TERMIN-DAUER -->
-    <!-- EINSTELLUNGEN FÜR TERMIN-DAUER -->
+ <!-- POP-UP: ARBEITSZEITEN & URLAUB (ARZT) -->
+  <p-dialog header="Meine Einstellungen & Arbeitszeiten" [modal]="true" [(visible)]="showScheduleDialog" [style]="{width: '35rem'}">
+    
+  <!-- DAUER -->
     <div class="bg-blue-50 p-4 rounded-md mb-6 border border-blue-100">
       <div class="flex justify-between items-center mb-2">
         <h3 class="font-bold text-blue-800"><i class="pi pi-clock mr-2"></i>Dauer eines Termins</h3>
-        <!-- NEU: Zeigt die AKTUELL gespeicherte Dauer an -->
-        <span class="text-xs font-bold bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
-          Aktuell: {{ selectedDuration }} Min
-        </span>
+        <span class="text-xs font-bold bg-blue-200 text-blue-800 px-2 py-1 rounded-full">Aktuell: {{ selectedDuration }} Min</span>
       </div>
-
-      <div class="flex gap-3 items-center">
-        <p-dropdown
-          [options]="durationOptions"
-          [(ngModel)]="selectedDuration"
-          optionLabel="label"
-          optionValue="value"
+      
+      <!-- HIER: items-stretch sorgt dafür, dass Dropdown und Button exakt gleich hoch werden -->
+      <div class="flex gap-3 items-stretch">
+        
+        <p-dropdown 
+          [options]="durationOptions" 
+          [(ngModel)]="selectedDuration" 
+          optionLabel="label" 
+          optionValue="value" 
           styleClass="w-48"
-        >
+          inputStyleClass="p-3"> <!-- p-3 wie beim großen Button -->
         </p-dropdown>
-        <p-button
-          label="Speichern"
-          icon="pi pi-check"
-          (click)="saveDuration()"
-          styleClass="p-2 px-4 rounded-lg font-bold text-white bg-blue-600 hover:bg-blue-700 border-none transition-all"
-        ></p-button>
+        
+        <p-button 
+          label="Dauer speichern" 
+          icon="pi pi-check" 
+          severity="info" 
+          (onClick)="saveDuration()"
+          styleClass="h-full p-3 px-4 rounded-lg font-bold text-white bg-blue-600 hover:bg-blue-700 border-none transition-all">
+        </p-button>
+
       </div>
-      <p class="text-xs text-blue-600 mt-2">
-        Hinweis: Dies betrifft nur zukünftige freie Zeitslots.
-      </p>
+      <p class="text-xs text-blue-600 mt-2">Hinweis: Dies betrifft nur zukünftige freie Zeitslots.</p>
     </div>
 
-   <!-- URLAUB / FEIERTAG EINTRAGEN -->
+    <!-- URLAUB / FEIERTAG EINTRAGEN -->
     <div class="bg-orange-50 p-4 rounded-md mb-6 border border-orange-100">
       <h3 class="font-bold text-orange-800 mb-2"><i class="pi pi-calendar-times mr-2"></i>Urlaub / Feiertag</h3>
       
-      <div class="flex gap-3 items-center">
-       <p-calendar 
+      <!-- HIER: items-stretch für exakt gleiche Höhe -->
+      <div class="flex gap-3 items-stretch">
+        
+        <p-calendar 
           [(ngModel)]="blockedDate" 
           [minDate]="minDate"
           placeholder="Datum / Zeitraum auswählen" 
           appendTo="body" 
           [readonlyInput]="true"
           selectionMode="range" 
-          styleClass="w-full">
+          styleClass="w-full"
+          inputStyleClass="w-full p-3 !border-gray-300"> <!-- p-3 wie beim großen Button -->
         </p-calendar>
-        <p-button label="Tag blockieren" icon="pi pi-ban" size="small" severity="warning" (click)="blockDay()" [disabled]="!blockedDate"           styleClass="p-2 px-4 rounded-lg font-bold text-white bg-orange-500 hover:bg-orange-600 border-none transition-all"></p-button>
-      </div>
+        
+        <p-button 
+          label="Urlaub eintragen" 
+          icon="pi pi-ban" 
+          severity="warning"
+          [disabled]="!blockedDate" 
+          (onClick)="blockDay()" 
+          styleClass="h-full p-3 px-4 whitespace-nowrap rounded-lg font-bold text-white bg-orange-500 hover:bg-orange-600 border-none transition-all">
+        </p-button>
 
+      </div>
+      
  <!-- LISTE DER BEREITS GESPEICHERTEN URLAUBE -->
       <div class="mt-4" *ngIf="groupedHolidays.length > 0">
         <h4 class="font-bold text-orange-700 text-sm mb-2">Meine gebuchten Urlaube:</h4>
