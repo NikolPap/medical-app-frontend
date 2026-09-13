@@ -181,8 +181,13 @@ ngOnInit(): void {
     });
   }
 
-  openNewAppointmentDialog() {
+ openNewAppointmentDialog() {
     this.newAppointmentForm.reset();
+    
+    // NEU: Wir leeren auch die grünen Buttons und die Auswahl!
+    this.availableSlots = []; 
+    this.selectedTimeSlot = ''; 
+    
     this.showNewAppointmentDialog = true;
   }
 
@@ -443,19 +448,41 @@ editSchedule(schedule: any) {
  blockDay() {
     if (!this.blockedDate) return;
 
-    // Wir prüfen, ob der Arzt einen Bereich (Range) oder nur einen Tag gewählt hat
     let startDate: Date;
     let endDate: Date;
 
     if (Array.isArray(this.blockedDate)) {
       startDate = this.blockedDate[0];
-      endDate = this.blockedDate[1] ? this.blockedDate[1] : this.blockedDate[0]; // Falls er nur 1 Klick gemacht hat
+      endDate = this.blockedDate[1] ? this.blockedDate[1] : this.blockedDate[0]; 
     } else {
       startDate = this.blockedDate;
       endDate = this.blockedDate;
     }
 
-    // Datum formatieren
+    if (!startDate) return;
+
+    // --- BUG FIX: PRÜFUNG AUF DUPLIKATE ---
+    const isAlreadyBlocked = this.myHolidays.some(h => {
+      // Wir setzen die Stunden auf 00:00:00, um nur die Tage zu vergleichen!
+      const hDate = new Date(h.holidayDate);
+      hDate.setHours(0,0,0,0);
+      
+      const sDate = new Date(startDate);
+      sDate.setHours(0,0,0,0);
+      
+      const eDate = new Date(endDate);
+      eDate.setHours(0,0,0,0);
+
+      // Prüft, ob der gespeicherte Urlaub (hDate) in die ausgewählte Range fällt
+      return hDate.getTime() >= sDate.getTime() && hDate.getTime() <= eDate.getTime();
+    });
+
+    if (isAlreadyBlocked) {
+      this.messageService.add({severity: 'error', summary: 'Fehler', detail: 'Ein oder mehrere Tage in diesem Zeitraum sind bereits als Urlaub markiert!'});
+      return; // Sofort abbrechen! Keine Anfrage an Java!
+    }
+    // --------------------------------------
+
     const format = (d: Date) => {
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
