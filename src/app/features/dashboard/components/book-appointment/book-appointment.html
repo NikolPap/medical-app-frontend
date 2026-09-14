@@ -1,0 +1,29 @@
+<p-dialog header="Neuen Termin buchen" [modal]="true" [(visible)]="showDialog" [style]="{ width: '35rem' }">
+  <form [formGroup]="newAppointmentForm" (ngSubmit)="bookAppointment()" class="flex flex-col gap-5 mt-4">
+    
+    <div class="flex flex-col gap-2">
+      <label class="font-semibold text-gray-700">Wähle einen Arzt</label>
+      <p-dropdown [options]="doctors" formControlName="doctorId" placeholder="Arzt auswählen" optionLabel="label" optionValue="value" styleClass="w-full" (onChange)="loadAvailableSlots()"></p-dropdown>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label class="font-semibold text-gray-700">Datum wählen</label>
+      <p-calendar formControlName="appointmentDate" [minDate]="minDate" appendTo="body" placeholder="z.B. 24.12.2024" styleClass="w-full" [readonlyInput]="true" (onSelect)="loadAvailableSlots()"></p-calendar>
+    </div>
+
+    <div *ngIf="availableSlots.length > 0" class="flex flex-col gap-2">
+      <label class="font-semibold text-gray-700">Verfügbare Uhrzeiten</label>
+      <div class="flex flex-wrap gap-2">
+        <ng-container *ngFor="let time of availableSlots">
+          <p-button [label]="time" [severity]="selectedTimeSlot === time ? 'success' : 'secondary'" [outlined]="selectedTimeSlot !== time" size="small" (click)="selectTimeSlot(time)"></p-button>
+        </ng-container>
+      </div>
+    </div>
+
+    <div *ngIf="availableSlots.length === 0 && newAppointmentForm.value.doctorId && newAppointmentForm.value.appointmentDate" class="text-red-500 text-sm italic">
+      An diesem Tag sind leider keine Termine mehr verfügbar.
+    </div>
+
+    <p-button type="submit" label="Termin verbindlich buchen" icon="pi pi-calendar-plus" [disabled]="newAppointmentForm.invalid" styleClass="w-full mt-6 p-3 rounded-lg shadow-md font-bold text-lg text-white bg-green-600 hover:bg-green-700 border-none transition-all"></p-button>
+  </form>
+</p-dialog>
