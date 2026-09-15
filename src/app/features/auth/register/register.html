@@ -1,108 +1,88 @@
-<div class="h-full w-full flex items-center justify-center p-4 min-h-[calc(100vh-140px)]">
+<div class="min-h-screen flex flex-col md:flex-row bg-cool-paper font-sans">
   
-  <!-- PrimeNG Card: header="..." entfernt für zentrierten Titel -->
-  <p-card [style]="{ width: '100%', maxWidth: '400px' }" styleClass="shadow-lg pt-2 pb-4">
-    
-    <!-- ZENTRIERTER TITEL -->
-    <div class="text-center mb-8">
-      <h2 class="text-3xl font-extrabold text-gray-800">Account erstellen</h2>
-      <p class="text-sm text-gray-500 mt-2">Schließe dich unserer Plattform an.</p>
+  <!-- LINKE SEITE (Brand / Ink Teal) -->
+  <div class="md:w-5/12 bg-ink-teal text-white flex flex-col justify-between p-8 md:p-16 shadow-2xl z-10">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 bg-warm-brass rounded-2xl flex items-center justify-center text-ink-teal text-2xl shadow-lg">
+        <i class="pi pi-heart-fill"></i>
+      </div>
+      <span class="font-serif text-3xl tracking-wide font-semibold text-warm-brass">MedSync</span>
     </div>
 
-    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-6">
+    <div class="mt-20 md:mt-0">
+      <h1 class="font-serif text-4xl md:text-5xl leading-tight text-cool-paper mb-4">
+        Zusammen für eine bessere Gesundheit.
+      </h1>
+      <p class="text-lg text-gray-300 font-light">Dein Account in nur wenigen Sekunden.</p>
+    </div>
+
+    <div class="hidden md:flex gap-2 mt-auto">
+      <div class="w-8 h-1 bg-warm-brass rounded-full"></div>
+      <div class="w-16 h-1 bg-gray-600 rounded-full"></div>
+    </div>
+  </div>
+
+
+  <!-- RECHTE SEITE (Formular) -->
+  <div class="flex-1 flex items-center justify-center p-8 md:p-16 relative overflow-y-auto">
+    <div class="w-full max-w-md">
       
-      <!-- Rolle (Dropdown) -->
-      <div class="flex flex-col gap-2">
-        <label class="font-semibold text-gray-700">Ich bin...</label>
-        <!-- Dropdown mit angepasstem Border-Styling -->
-        <p-dropdown 
-          [options]="roles" 
-          formControlName="role" 
-          optionLabel="label" 
-          optionValue="value" 
-          styleClass="w-full rounded-lg border-gray-300 hover:border-gray-400">
-        </p-dropdown>
+      <div class="mb-10">
+        <h2 class="font-serif text-4xl text-ink-teal font-semibold mb-2">Account erstellen</h2>
+        <p class="text-gray-500">Schließe dich unserer Plattform an.</p>
       </div>
 
-      <!-- Email Feld -->
-      <div class="flex flex-col gap-2">
-        <label for="email" class="font-semibold text-gray-700">E-Mail Adresse</label>
-        <input 
-          pInputText 
-          id="email" 
-          formControlName="email" 
-          type="email" 
-          placeholder="max@muster.de" 
-          class="w-full p-3 rounded-lg border border-gray-300 hover:border-gray-400 focus:border-gray-800 outline-none transition-colors" />
-      </div>
-
-      <!-- Passwort Feld -->
-         <div class="flex flex-col gap-2">
-        <label for="password" class="font-semibold text-gray-700">Passwort</label>
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-5">
         
-        <p-password 
-          id="password" 
-          formControlName="password" 
-          placeholder="••••••••" 
-          [toggleMask]="true" 
-          
-          [feedback]="true" 
-          promptLabel="Bitte Passwort eingeben"
-          weakLabel="Schwach"
-          mediumLabel="Mittel"
-          strongLabel="Stark"
-          
-          styleClass="w-full" 
-          inputStyleClass="w-full p-3 rounded-lg border border-gray-300 hover:border-gray-400 focus:border-gray-800 outline-none transition-colors">
-        </p-password>
-        
-        <!-- Fehlermeldung, wenn das Pattern nicht erfüllt ist -->
-        <small *ngIf="registerForm.get('password')?.errors?.['pattern'] && registerForm.get('password')?.touched" class="text-red-500">
-          Muss mind. 1 Großbuchstaben, 1 Kleinbuchstaben & 1 Zahl enthalten.
-        </small>
-        <!-- Standard-Hinweis, wenn noch kein Fehler da ist -->
-        <small *ngIf="!registerForm.get('password')?.errors?.['pattern']" class="text-gray-500">
-          Mindestens 6 Zeichen, inkl. Groß-, Kleinbuchstabe und Zahl.
-        </small>
+        <!-- Rolle (Dropdown) -->
+        <div class="flex flex-col gap-2">
+          <label class="font-medium text-ink-teal">Ich bin...</label>
+          <p-dropdown 
+            [options]="roles" 
+            formControlName="role" 
+            optionLabel="label" 
+            optionValue="value" 
+            styleClass="w-full rounded-xl border-gray-200"
+            inputStyleClass="p-4">
+          </p-dropdown>
+        </div>
 
-        <!-- NEU: Passwort wiederholen -->
-      <div class="flex flex-col gap-2 text-left">
-        <label for="confirmPassword" class="font-semibold text-gray-700">Passwort wiederholen</label>
-        <p-password 
-          id="confirmPassword" 
-          formControlName="confirmPassword" 
-          placeholder="••••••••" 
-          [toggleMask]="true" 
-          [feedback]="false" 
-          styleClass="w-full" 
-          inputStyleClass="w-full p-3 rounded-lg border border-gray-300 hover:border-gray-400 focus:border-gray-800 outline-none transition-colors">
-        </p-password>
-        
-        <!-- Fehlermeldung, wenn Passwörter nicht übereinstimmen -->
-        <small *ngIf="registerForm.errors?.['passwordMismatch'] && registerForm.get('confirmPassword')?.touched" class="text-red-500 font-bold">
-          Die Passwörter stimmen nicht überein!
-        </small>
-      </div>
-      </div>
+        <!-- Email -->
+        <div class="flex flex-col gap-2">
+          <label for="email" class="font-medium text-ink-teal">E-Mail Adresse</label>
+          <input pInputText id="email" formControlName="email" type="email" placeholder="max@muster.de" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm" />
+        </div>
 
-      <!-- Button (Dunkelgrau wie beim Login) -->
-      <p-button 
-        type="submit" 
-        label="Registrieren" 
-        icon="pi pi-user-plus" 
-        [disabled]="registerForm.invalid"
-        styleClass="w-full mt-4 p-3 rounded-lg shadow-md font-bold text-lg text-white bg-gray-800 hover:bg-gray-900 border-none transition-all">
-      </p-button>
+        <!-- Passwort -->
+        <div class="flex flex-col gap-2">
+          <label for="password" class="font-medium text-ink-teal">Passwort</label>
+          <p-password id="password" formControlName="password" placeholder="••••••••" [toggleMask]="true" [feedback]="true" promptLabel="Bitte Passwort eingeben" weakLabel="Schwach" mediumLabel="Mittel" strongLabel="Stark" styleClass="w-full" inputStyleClass="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm"></p-password>
+          <small *ngIf="registerForm.get('password')?.errors?.['pattern'] && registerForm.get('password')?.touched" class="text-status-brick font-bold">
+            Muss mind. 1 Großbuchstaben, 1 Kleinbuchstaben & 1 Zahl enthalten.
+          </small>
+        </div>
 
-      <!-- Zurück zum Login -->
-      <div class="text-center text-sm mt-2">
-        <span class="text-gray-600">Hast du schon einen Account? </span>
-        <a routerLink="/login" class="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition-colors">
-          Hier einloggen
-        </a>
-      </div>
+        <!-- Passwort wiederholen -->
+        <div class="flex flex-col gap-2">
+          <label for="confirmPassword" class="font-medium text-ink-teal">Passwort wiederholen</label>
+          <p-password id="confirmPassword" formControlName="confirmPassword" placeholder="••••••••" [toggleMask]="true" [feedback]="false" styleClass="w-full" inputStyleClass="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm"></p-password>
+          <small *ngIf="registerForm.errors?.['passwordMismatch'] && registerForm.get('confirmPassword')?.touched" class="text-status-brick font-bold">
+            Die Passwörter stimmen nicht überein!
+          </small>
+        </div>
 
-    </form>
-  </p-card>
+        <!-- Links & Button -->
+        <div class="flex justify-end text-sm mt-2">
+          <a routerLink="/login" class="font-medium text-warm-brass hover:text-warm-brass-dark transition-colors">Hast du schon einen Account?</a>
+        </div>
 
+        <p-button type="submit" [disabled]="registerForm.invalid" styleClass="w-full mt-4 p-4 rounded-xl font-bold text-lg text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all shadow-md flex justify-center items-center gap-2">
+          <ng-template pTemplate="content">
+            <i class="pi pi-user-plus"></i> Registrieren
+          </ng-template>
+        </p-button>
+
+      </form>
+    </div>
+  </div>
 </div>
