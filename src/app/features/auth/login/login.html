@@ -1,71 +1,94 @@
-<div class="h-full w-full flex items-center justify-center p-4 min-h-[calc(100vh-140px)]">
+<div class="min-h-screen flex flex-col md:flex-row bg-cool-paper font-sans">
   
-  <!-- PrimeNG Card: header="..." entfernt, damit wir den Titel selbst zentrieren können! -->
-  <p-card [style]="{ width: '100%', maxWidth: '400px' }" styleClass="shadow-lg pt-2 pb-4">
+  <!-- LINKE SEITE (Brand / Ink Teal) -->
+  <div class="md:w-5/12 bg-ink-teal text-white flex flex-col justify-between p-8 md:p-16 shadow-2xl z-10">
     
-    <!-- HIER IST DER ZENTRIERTE TITEL -->
-    <div class="text-center mb-8">
-      <h2 class="text-3xl font-extrabold text-gray-800">Login</h2>
-      <p class="text-sm text-gray-500 mt-2">Bitte gib deine Zugangsdaten ein.</p>
+    <!-- Logo -->
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 bg-warm-brass rounded-2xl flex items-center justify-center text-ink-teal text-2xl shadow-lg">
+        <i class="pi pi-heart-fill"></i>
+      </div>
+      <span class="font-serif text-3xl tracking-wide font-semibold text-warm-brass">MedSync</span>
     </div>
 
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-5">
+    <!-- Slogan -->
+    <div class="mt-20 md:mt-0">
+      <h1 class="font-serif text-4xl md:text-5xl leading-tight text-cool-paper mb-4">
+        In wenigen Schritten startklar —
+      </h1>
+      <p class="text-lg text-gray-300 font-light">als Patient oder als Arzt.</p>
+    </div>
+
+    <!-- Dekoration unten links -->
+    <div class="hidden md:flex gap-2 mt-auto">
+      <div class="w-8 h-1 bg-warm-brass rounded-full"></div>
+      <div class="w-16 h-1 bg-gray-600 rounded-full"></div>
+    </div>
+  </div>
+
+
+  <!-- RECHTE SEITE (Login Formular) -->
+  <div class="flex-1 flex items-center justify-center p-8 md:p-24 relative">
+    
+    <div class="w-full max-w-md">
       
-    <!-- Email Feld -->
-      <div class="flex flex-col gap-2">
-        <label for="email" class="font-semibold text-gray-700">E-Mail Adresse</label>
-        <input 
-          pInputText 
-          id="email" 
-          formControlName="email" 
-          type="email" 
-          placeholder="arzt@klinik.de" 
-          class="w-full p-3 rounded-lg border border-gray-300 hover:border-gray-400 focus:border-gray-800 outline-none transition-colors" />
+      <div class="mb-10">
+        <h2 class="font-serif text-4xl text-ink-teal font-semibold mb-2">Willkommen zurück</h2>
+        <p class="text-gray-500">Bitte gib deine Zugangsdaten ein.</p>
       </div>
 
-      <!-- Passwort Feld -->
-      <div class="flex flex-col gap-2">
-        <label for="password" class="font-semibold text-gray-700">Passwort</label>
-        <p-password
-          id="password"
-          formControlName="password"
-          placeholder="••••••••"
-          [toggleMask]="true"
-          [feedback]="false"
-          styleClass="w-full"
-          inputStyleClass="w-full p-3 rounded-lg border border-gray-300 hover:border-gray-400 focus:border-gray-800 outline-none transition-colors">
-        </p-password>
-      </div>
-
-      <!-- Links (100% sauber getrennt durch CSS Grid) -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 mb-2 w-full">
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-6">
         
-        <!-- Link: Passwort vergessen (Links ausgerichtet auf Desktop) -->
-        <div class="text-left">
-          <a routerLink="/forgot-password" class="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors block">
+        <!-- Email -->
+        <div class="flex flex-col gap-2">
+          <label for="email" class="font-medium text-ink-teal">E-Mail Adresse</label>
+          <!-- Helle Inputs passend zum cool-paper -->
+          <input 
+            pInputText 
+            id="email" 
+            formControlName="email" 
+            type="email" 
+            placeholder="arzt@klinik.de" 
+            class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm" />
+        </div>
+
+        <!-- Passwort -->
+        <div class="flex flex-col gap-2">
+          <label for="password" class="font-medium text-ink-teal">Passwort</label>
+          <p-password 
+            id="password" 
+            formControlName="password" 
+            placeholder="••••••••" 
+            [toggleMask]="true" 
+            [feedback]="false" 
+            styleClass="w-full" 
+            inputStyleClass="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm">
+          </p-password>
+        </div>
+
+        <!-- Links -->
+        <div class="flex justify-between items-center text-sm mt-2">
+          <a routerLink="/forgot-password" class="font-medium text-warm-brass hover:text-warm-brass-dark transition-colors">
             Passwort vergessen?
           </a>
-        </div>
-        
-        <!-- Link: Account erstellen (Rechts ausgerichtet auf Desktop) -->
-        <div class="text-left sm:text-right">
-          <a routerLink="/register" class="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors block">
-            Neuen Account erstellen
+          <a routerLink="/register" class="font-medium text-warm-brass hover:text-warm-brass-dark transition-colors">
+            Account erstellen
           </a>
         </div>
 
-      </div>
+        <!-- Custom Button (Warm Brass) -->
+        <p-button 
+          type="submit" 
+          [disabled]="loginForm.invalid"
+          styleClass="w-full mt-4 p-4 rounded-xl font-bold text-lg text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all shadow-md flex justify-center items-center gap-2">
+          <ng-template pTemplate="content">
+            <i class="pi pi-sign-in"></i> Einloggen
+          </ng-template>
+        </p-button>
 
-      <!-- PrimeNG Button -->
-      <p-button 
-        type="submit" 
-        label="Einloggen" 
-        icon="pi pi-sign-in" 
-        [disabled]="loginForm.invalid"
-        styleClass="w-full mt-6 p-3 rounded-lg shadow-md font-bold text-lg text-white bg-gray-800 hover:bg-gray-900 border-none transition-all">
-      </p-button>
+      </form>
+    </div>
 
-    </form>
-  </p-card>
+  </div>
 
 </div>
