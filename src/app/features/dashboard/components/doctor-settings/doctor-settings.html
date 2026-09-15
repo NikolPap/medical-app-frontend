@@ -1,89 +1,151 @@
-<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
-<p-dialog header="Meine Einstellungen & Arbeitszeiten" [modal]="true" [(visible)]="showDialog" [style]="{width: '35rem'}">
+<!-- POP-UP: EINSTELLUNGEN & ARBEITSZEITEN -->
+<p-dialog header="Einstellungen & Arbeitszeiten" [modal]="true" [(visible)]="showDialog" [style]="{width: '38rem'}" styleClass="rounded-3xl shadow-2xl">
+    
+  <div class="px-2 pb-4 font-sans">
     
     <!-- DAUER -->
-    <div class="bg-blue-50 p-4 rounded-md mb-6 border border-blue-100 mt-4">
-      <div class="flex justify-between items-center mb-2">
-        <h3 class="font-bold text-blue-800"><i class="pi pi-clock mr-2"></i>Dauer eines Termins</h3>
-        <span class="text-xs font-bold bg-blue-200 text-blue-800 px-2 py-1 rounded-full">Aktuell: {{ selectedDuration }} Min</span>
+    <div class="bg-cool-paper p-5 rounded-2xl mb-8 border border-gray-100">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-serif font-bold text-ink-teal text-xl"><i class="pi pi-clock mr-2 text-warm-brass"></i>Termin-Dauer</h3>
+        <span class="text-xs font-bold bg-white text-ink-teal px-3 py-1 rounded-full shadow-sm border border-gray-100">Aktuell: {{ selectedDuration }} Min</span>
       </div>
+      
       <div class="flex gap-3 items-stretch">
-        <p-dropdown [options]="durationOptions" [(ngModel)]="selectedDuration" optionLabel="label" optionValue="value" styleClass="w-48 h-[48px] flex items-center"></p-dropdown>
-        <p-button label="Dauer speichern" icon="pi pi-check" severity="info" (onClick)="saveDuration()" styleClass="h-[48px] px-4 rounded-lg font-bold text-white bg-blue-600 hover:bg-blue-700 border-none transition-all"></p-button>
+        <p-dropdown 
+          [options]="durationOptions" 
+          [(ngModel)]="selectedDuration" 
+          optionLabel="label" 
+          optionValue="value" 
+          styleClass="w-48 h-[48px] flex items-center rounded-xl border-gray-200">
+        </p-dropdown>
+        
+        <p-button 
+          label="Speichern" 
+          icon="pi pi-check" 
+          (onClick)="saveDuration()"
+          styleClass="h-[48px] px-6 rounded-xl font-bold text-white bg-ink-teal hover:bg-ink-teal/90 border-none transition-all shadow-md">
+        </p-button>
       </div>
+      <p class="text-xs text-gray-500 mt-3 font-medium">Hinweis: Dies betrifft nur zukünftige, freie Zeitslots.</p>
     </div>
 
-    <!-- URLAUB -->
-    <div class="bg-orange-50 p-4 rounded-md mb-6 border border-orange-100">
-      <h3 class="font-bold text-orange-800 mb-2"><i class="pi pi-calendar-times mr-2"></i>Urlaub / Feiertag</h3>
-      <div class="flex gap-3 items-stretch">
-        <p-calendar [(ngModel)]="blockedDate" [minDate]="minDate" placeholder="Datum / Zeitraum auswählen" appendTo="body" [readonlyInput]="true" selectionMode="range" styleClass="w-full h-[48px]" inputStyleClass="w-full h-full !border-gray-300"></p-calendar>
-        <p-button label="Urlaub eintragen" icon="pi pi-ban" severity="warning" [disabled]="!blockedDate" (onClick)="blockDay()" styleClass="h-[48px] px-4 whitespace-nowrap rounded-lg font-bold text-white bg-orange-500 hover:bg-orange-600 border-none transition-all"></p-button>
+
+    <!-- URLAUB / FEIERTAG EINTRAGEN -->
+    <div class="bg-red-50/50 p-5 rounded-2xl mb-8 border border-red-100">
+      <h3 class="font-serif font-bold text-status-brick text-xl mb-4"><i class="pi pi-calendar-times mr-2"></i>Urlaub / Feiertag</h3>
+      
+      <div class="flex gap-3">
+        <p-calendar 
+          [(ngModel)]="blockedDate" 
+          [minDate]="minDate"
+          placeholder="Datum / Zeitraum wählen" 
+          appendTo="body" 
+          [readonlyInput]="true"
+          selectionMode="range" 
+          styleClass="w-full h-[48px]"
+          inputStyleClass="w-full h-full rounded-xl border-red-200 focus:border-status-brick">
+        </p-calendar>
+        
+        <p-button 
+          label="Blockieren" 
+          icon="pi pi-ban" 
+          [disabled]="!blockedDate" 
+          (onClick)="blockDay()" 
+          styleClass="h-[48px] px-6 whitespace-nowrap rounded-xl font-bold text-white bg-status-brick hover:bg-status-brick/90 border-none transition-all shadow-md">
+        </p-button>
       </div>
-      <div class="mt-4" *ngIf="groupedHolidays.length > 0">
-        <h4 class="font-bold text-orange-700 text-sm mb-2">Meine gebuchten Urlaube:</h4>
+
+      <!-- LISTE DER BEREITS GESPEICHERTEN URLAUBE -->
+      <div class="mt-6" *ngIf="groupedHolidays.length > 0">
+        <h4 class="font-bold text-gray-600 text-xs uppercase tracking-wider mb-3">Gebuchte Urlaube</h4>
         <ul class="text-sm text-gray-700 flex flex-col gap-2 max-h-48 overflow-y-auto pr-2">
-          <li *ngFor="let group of groupedHolidays" class="flex justify-between items-center py-2 px-3 bg-white border border-orange-200 rounded-md shadow-sm">
-            <div class="flex items-center gap-2">
-              <i class="pi pi-calendar text-orange-500"></i>
-              <span class="font-medium text-gray-800" *ngIf="group.startDate === group.endDate">{{ group.startDate | date:'dd.MM.yyyy' }}</span>
-              <span class="font-medium text-gray-800" *ngIf="group.startDate !== group.endDate">{{ group.startDate | date:'dd.MM.yyyy' }} <span class="text-gray-400 mx-1">bis</span> {{ group.endDate | date:'dd.MM.yyyy' }}</span>
+          <li *ngFor="let group of groupedHolidays" class="flex justify-between items-center py-2 px-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-status-brick"><i class="pi pi-calendar"></i></div>
+              <span class="font-semibold text-gray-800" *ngIf="group.startDate === group.endDate">{{ group.startDate | date:'dd.MM.yyyy' }}</span>
+              <span class="font-semibold text-gray-800" *ngIf="group.startDate !== group.endDate">{{ group.startDate | date:'dd.MM.yyyy' }} <span class="text-gray-400 mx-1 font-normal">bis</span> {{ group.endDate | date:'dd.MM.yyyy' }}</span>
             </div>
-            <p-button icon="pi pi-trash" severity="danger" [text]="true" [rounded]="true" pTooltip="Urlaub löschen" (click)="deleteHoliday(group.ids)"></p-button>
+            <p-button icon="pi pi-trash" [text]="true" [rounded]="true" pTooltip="Löschen" (click)="deleteHoliday(group.ids)" styleClass="text-status-brick hover:bg-red-50"></p-button>
           </li>
         </ul>
       </div>
     </div>
 
-    <!-- NEUE SCHICHT -->
-    <h3 class="font-bold text-gray-800 mb-3 border-b pb-2">Neue Arbeitszeit hinzufügen</h3>
-    <form [formGroup]="scheduleForm" (ngSubmit)="saveSchedule()" class="flex flex-col gap-4">
-      <div class="flex flex-col gap-2">
-        <label class="font-semibold text-gray-700">Wochentag</label>
-        <select formControlName="dayOfWeek" class="h-[48px] p-2 border border-gray-300 rounded-md bg-white">
-          <option value="MONDAY">Montag</option><option value="TUESDAY">Dienstag</option><option value="WEDNESDAY">Mittwoch</option>
-          <option value="THURSDAY">Donnerstag</option><option value="FRIDAY">Freitag</option><option value="SATURDAY">Samstag</option>
-          <option value="SUNDAY">Sonntag</option>
-        </select>
-      </div>
-      <div class="flex gap-4">
-        <div class="flex flex-col gap-2 w-full">
-          <label class="font-semibold text-gray-700">Startzeit</label>
-          <input type="time" formControlName="startTime" class="h-[48px] p-2 border border-gray-300 rounded-md w-full" required>
+
+    <!-- NEUE SCHICHT HINZUFÜGEN -->
+    <div class="mb-8">
+      <h3 class="font-serif font-bold text-ink-teal text-xl mb-4 border-b border-gray-100 pb-2">Neue Arbeitszeit hinzufügen</h3>
+      <form [formGroup]="scheduleForm" (ngSubmit)="saveSchedule()" class="flex flex-col gap-5">
+        
+        <div class="flex flex-col gap-2">
+          <label class="font-medium text-gray-600 text-sm">Wochentag</label>
+          <select formControlName="dayOfWeek" class="h-[48px] px-4 border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-warm-brass focus:ring-1 focus:ring-warm-brass shadow-sm transition-all">
+            <option value="MONDAY">Montag</option>
+            <option value="TUESDAY">Dienstag</option>
+            <option value="WEDNESDAY">Mittwoch</option>
+            <option value="THURSDAY">Donnerstag</option>
+            <option value="FRIDAY">Freitag</option>
+            <option value="SATURDAY">Samstag</option>
+            <option value="SUNDAY">Sonntag</option>
+          </select>
         </div>
-        <div class="flex flex-col gap-2 w-full">
-          <label class="font-semibold text-gray-700">Endzeit</label>
-          <input type="time" formControlName="endTime" class="h-[48px] p-2 border border-gray-300 rounded-md w-full" required>
+
+        <div class="flex gap-4">
+          <div class="flex flex-col gap-2 w-full">
+            <label class="font-medium text-gray-600 text-sm">Startzeit</label>
+            <input type="time" formControlName="startTime" class="h-[48px] px-4 border border-gray-200 rounded-xl w-full focus:outline-none focus:border-warm-brass focus:ring-1 focus:ring-warm-brass shadow-sm transition-all" required>
+          </div>
+          <div class="flex flex-col gap-2 w-full">
+            <label class="font-medium text-gray-600 text-sm">Endzeit</label>
+            <input type="time" formControlName="endTime" class="h-[48px] px-4 border border-gray-200 rounded-xl w-full focus:outline-none focus:border-warm-brass focus:ring-1 focus:ring-warm-brass shadow-sm transition-all" required>
+          </div>
         </div>
-      </div>
-     <p-button
-        type="submit"
-        label="Schicht hinzufügen"
-        icon="pi pi-calendar-plus"
-        [disabled]="scheduleForm.invalid"
-        styleClass="w-full mt-4 p-3 rounded-lg shadow-md font-bold text-white bg-indigo-600 hover:bg-indigo-700 border-none transition-all"
-      ></p-button>
-    </form>
+
+        <p-button 
+          type="submit" 
+          label="Schicht speichern" 
+          icon="pi pi-save" 
+          [disabled]="scheduleForm.invalid" 
+          styleClass="w-full h-[48px] mt-2 rounded-xl shadow-md font-bold text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all">
+        </p-button>
+
+      </form>
+    </div>
+
 
     <!-- LISTE SCHICHTEN -->
-    <div class="mt-8 border-t pt-4">
-      <h3 class="font-bold text-gray-800 mb-4">Mein aktueller Plan (Sortiert):</h3>
-      <div *ngIf="mySchedule.length === 0" class="text-center p-4 bg-gray-50 rounded-md text-gray-500 italic">Du hast noch keine Arbeitszeiten eingetragen.</div>
+    <div class="border-t border-gray-100 pt-6">
+      <h3 class="font-serif font-bold text-ink-teal text-xl mb-4">Mein aktueller Plan</h3>
+      
+      <div *ngIf="mySchedule.length === 0" class="text-center p-6 bg-gray-50 rounded-2xl text-gray-400 italic border border-gray-100">
+        Du hast noch keine Arbeitszeiten eingetragen.
+      </div>
+      
       <ul class="text-sm text-gray-700 flex flex-col gap-3">
-        <li *ngFor="let dayGroup of groupedSchedule" class="bg-white border border-gray-200 rounded-md shadow-sm p-3">
-          <div class="flex items-center gap-3 border-b pb-2 mb-2">
-            <span class="font-bold text-blue-700 bg-blue-100 px-3 py-1 rounded-full uppercase text-xs tracking-wider">{{ dayGroup.dayOfWeek }}</span>
+        <li *ngFor="let dayGroup of groupedSchedule" class="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 hover:shadow-md transition-shadow">
+          
+          <div class="flex items-center gap-3 border-b border-gray-50 pb-3 mb-3">
+            <span class="font-bold text-ink-teal bg-cool-paper px-4 py-1.5 rounded-full uppercase text-xs tracking-widest">
+              {{ dayGroup.dayOfWeek }}
+            </span>
           </div>
-          <div class="flex flex-col gap-1">
-            <div *ngFor="let s of dayGroup.shifts" class="flex justify-between items-center hover:bg-gray-50 p-1 rounded transition-colors">
-              <span class="font-medium text-gray-800 ml-2"><i class="pi pi-clock mr-1 text-gray-400"></i> {{ s?.startTime?.substring(0,5) }} - {{ s?.endTime?.substring(0,5) }} Uhr</span>
+
+          <div class="flex flex-col gap-2">
+            <div *ngFor="let s of dayGroup.shifts" class="flex justify-between items-center hover:bg-gray-50 p-2 rounded-xl transition-colors">
+              <span class="font-semibold text-gray-800 pl-2">
+                <i class="pi pi-clock mr-2 text-warm-brass"></i> {{ s?.startTime?.substring(0,5) }} - {{ s?.endTime?.substring(0,5) }} Uhr
+              </span>
+              
               <div class="flex gap-1">
-                <p-button icon="pi pi-pencil" severity="info" [text]="true" [rounded]="true" pTooltip="Bearbeiten" (click)="editSchedule(s)"></p-button>
-                <p-button icon="pi pi-trash" severity="danger" [text]="true" [rounded]="true" pTooltip="Löschen" (click)="deleteSchedule(s.id)"></p-button>
+                <p-button icon="pi pi-pencil" [text]="true" [rounded]="true" pTooltip="Bearbeiten" (click)="editSchedule(s)" styleClass="text-gray-400 hover:bg-gray-100 hover:text-ink-teal"></p-button>
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" pTooltip="Löschen" (click)="deleteSchedule(s.id)" styleClass="text-gray-400 hover:bg-red-50 hover:text-status-brick"></p-button>
               </div>
             </div>
           </div>
+
         </li>
       </ul>
     </div>
+
+  </div>
 </p-dialog>

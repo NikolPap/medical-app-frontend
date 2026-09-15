@@ -21,20 +21,15 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api'; 
 import { AvatarModule } from 'primeng/avatar';
 
-// FULLCALENDAR IMPORTS
-// FULLCALENDAR IMPORTS (Der sichere Weg für Angular 17+)
-import { FullCalendarModule } from '@fullcalendar/angular';
-import { CalendarOptions, EventInput } from '@fullcalendar/core/index.js'; // <-- NEU: Das ".js" am Ende fixt oft den Vite/Esbuild Fehler!
-import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin from '@fullcalendar/interaction';
+import { BookAppointmentComponent } from './components/book-appointment/book-appointment';
+import { DoctorSettingsComponent } from './components/doctor-settings/doctor-settings';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [
     CommonModule, ReactiveFormsModule, FormsModule, TableModule, TagModule, ButtonModule, CardModule, 
-    DialogModule, ToastModule, DropdownModule, CalendarModule, ConfirmDialogModule, AvatarModule, FullCalendarModule,
+    DialogModule, ToastModule, DropdownModule, CalendarModule, ConfirmDialogModule, AvatarModule,
     BookAppointmentComponent, DoctorSettingsComponent
   ], 
   providers: [ConfirmationService],
@@ -50,28 +45,13 @@ export class DashboardComponent implements OnInit {
   filteredAppointments: Appointment[] = []; 
   currentFilter: string = 'ALL'; 
   isLoading: boolean = true;
+  
   userRole: string = ''; 
   userEmail: string = ''; 
   minDate: Date = new Date();
 
   showStatusDialog: boolean = false;
   selectedAppointment: Appointment | null = null;
-
-  // --- FULLCALENDAR SETTINGS ---
-  calendarOptions: CalendarOptions = {
-    initialView: 'timeGridWeek', // Wir starten mit der Wochenansicht (perfekt für Ärzte)
-    plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
-    headerToolbar: {
-      left: 'prev,next today',
-      center: 'title',
-      right: 'dayGridMonth,timeGridWeek,timeGridDay' 
-    },
-    events: [], 
-    eventClick: this.handleEventClick.bind(this), 
-    height: '100%',
-    slotMinTime: '06:00:00', // Der Kalender beginnt erst um 6 Uhr morgens
-    slotMaxTime: '22:00:00'  // Und endet um 22 Uhr
-  };
 
   constructor(
     private appointmentService: AppointmentService,
@@ -96,21 +76,6 @@ export class DashboardComponent implements OnInit {
         this.appointments = data;
         this.applyFilter(this.currentFilter); 
         this.isLoading = false;
-
-        // Fülle den FullCalendar mit den Terminen!
-        const calendarEvents: EventInput[] = data.map(appt => {
-          const isHoliday = appt.patientEmail === appt.doctorEmail;
-          
-          return {
-            id: appt.id.toString(),
-            title: isHoliday ? 'URLAUB' : appt.patientEmail.split('@')[0], 
-            start: appt.appointmentDate, 
-            backgroundColor: isHoliday ? '#ef4444' : (appt.status === 'CONFIRMED' ? '#22c55e' : '#f97316'), 
-            borderColor: 'transparent',
-            extendedProps: { status: appt.status }
-          };
-        });
-        this.calendarOptions = { ...this.calendarOptions, events: calendarEvents };
       },
       error: (err: any) => {
         console.error("Fehler beim Laden:", err);
@@ -119,13 +84,7 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  handleEventClick(clickInfo: any) {
-    const clickedAppt = this.appointments.find(a => a.id.toString() === clickInfo.event.id);
-    if (clickedAppt) {
-      this.openStatusDialog(clickedAppt);
-    }
-  }
-
+  // Gibt nur die bestätigten Termine von HEUTE zurück (Für die linke Spalte beim Arzt)
   get todaysAppointments(): Appointment[] {
     const today = new Date();
     return this.appointments.filter(a => {
@@ -134,17 +93,20 @@ export class DashboardComponent implements OnInit {
              apptDate.getMonth() === today.getMonth() &&
              apptDate.getFullYear() === today.getFullYear() &&
              a.status === 'CONFIRMED' && 
-             a.patientEmail !== a.doctorEmail; // Urlaube hier nicht als "Patienten-Visit" anzeigen
+             a.patientEmail !== a.doctorEmail; // Urlaube ausblenden
     });
   }
 
+  // Holt den ersten Buchstaben der E-Mail für das Avatar-Bild
   getInitial(email: string): string {
     return email ? email.charAt(0).toUpperCase() : '?';
   }
 
+  // --- FILTER LOGIK FÜR DIE KARTEN ---
   applyFilter(filterType: string) {
     this.currentFilter = filterType;
     const now = new Date();
+
     const validAppointments = this.appointments.filter(a => !(a.patientEmail === a.doctorEmail && a.status === 'CANCELLED'));
 
     if (filterType === 'ALL') {
@@ -165,12 +127,13 @@ export class DashboardComponent implements OnInit {
     return validAppointments.filter(a => a.status === filterType && new Date(a.appointmentDate) >= now).length;
   }
 
-  getSeverity(status: string): "success" | "info" | "warning" | "danger" | "secondary" | "contrast" | undefined {
+  // NEU: Custom Tailwind Classes für unsere Boutique-Farbpalette!
+  getStatusClasses(status: string): string {
     switch (status) {
-        case 'CONFIRMED': return 'success'; 
-        case 'PENDING': return 'warning';   
-        case 'CANCELLED': return 'danger';  
-        default: return 'info';
+        case 'CONFIRMED': return 'bg-status-sage/10 text-status-sage border border-status-sage/20'; // Sage Green
+        case 'PENDING': return 'bg-status-ochre/10 text-status-ochre border border-status-ochre/20'; // Warm Ochre
+        case 'CANCELLED': return 'bg-status-brick/10 text-status-brick border border-status-brick/20'; // Brick Red
+        default: return 'bg-gray-100 text-gray-600 border border-gray-200';
     }
   }
 
@@ -194,6 +157,7 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  // --- NAVIGATION & POPUPS ---
   logout() {
     localStorage.removeItem('jwt_token');
     window.location.href = '/login'; 
