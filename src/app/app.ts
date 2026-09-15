@@ -1,16 +1,14 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { HeaderComponent } from './core/layout/header/header';
-import { FooterComponent } from './core/layout/footer/footer';
-
 // NEU: Import für das Toast-Modul!
 import { ToastModule } from 'primeng/toast'; 
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   // NEU: ToastModule hier hinzufügen!
-  imports: [RouterOutlet, HeaderComponent, FooterComponent, ToastModule], 
+  imports: [RouterOutlet, ToastModule, ConfirmDialogModule], 
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
