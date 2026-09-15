@@ -1,60 +1,47 @@
-<div class="h-full w-full flex items-center justify-center p-4 min-h-[calc(100vh-140px)]">
+<div class="min-h-screen flex flex-col md:flex-row bg-cool-paper font-sans">
   
-  <!-- PrimeNG Card: header="..." entfernt für zentrierten Titel -->
-  <p-card [style]="{ width: '100%', maxWidth: '400px' }" styleClass="shadow-lg pt-2 pb-4">
-    
-    <!-- ZENTRIERTER TITEL -->
-    <div class="text-center mb-8">
-      <h2 class="text-3xl font-extrabold text-gray-800">E-Mail bestätigen</h2>
-      <p class="text-sm text-gray-500 mt-2 leading-relaxed">
-        Bitte gib den 6-stelligen Code ein, den du per E-Mail erhalten hast.
-      </p>
+  <div class="md:w-5/12 bg-ink-teal text-white flex flex-col justify-between p-8 md:p-16 shadow-2xl z-10">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 bg-warm-brass rounded-2xl flex items-center justify-center text-ink-teal text-2xl shadow-lg"><i class="pi pi-heart-fill"></i></div>
+      <span class="font-serif text-3xl tracking-wide font-semibold text-warm-brass">MedSync</span>
     </div>
+    <div class="mt-20 md:mt-0">
+      <h1 class="font-serif text-4xl md:text-5xl leading-tight text-cool-paper mb-4">Fast geschafft!</h1>
+      <p class="text-lg text-gray-300 font-light">Nur noch ein kleiner Schritt.</p>
+    </div>
+    <div class="hidden md:flex gap-2 mt-auto">
+      <div class="w-8 h-1 bg-warm-brass rounded-full"></div>
+      <div class="w-16 h-1 bg-gray-600 rounded-full"></div>
+    </div>
+  </div>
 
-    <form [formGroup]="verifyForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-6">
+  <div class="flex-1 flex items-center justify-center p-8 md:p-24 relative">
+    <div class="w-full max-w-md">
       
-      <!-- Email Feld -->
-      <div class="flex flex-col gap-2 text-left">
-        <label for="email" class="font-semibold text-gray-700">E-Mail Adresse</label>
-        <input 
-          pInputText 
-          id="email" 
-          formControlName="email" 
-          type="email" 
-          placeholder="max@muster.de" 
-          class="w-full p-3 rounded-lg border border-gray-300 hover:border-gray-400 focus:border-gray-800 outline-none transition-colors" />
+      <div class="mb-10">
+        <h2 class="font-serif text-4xl text-ink-teal font-semibold mb-2">Konto freischalten</h2>
+        <p class="text-gray-500">Bitte gib den 6-stelligen Code ein, den du per E-Mail erhalten hast.</p>
       </div>
 
-      <!-- 6-stelliger Code Feld -->
-      <div class="flex flex-col gap-2 text-left">
-        <label for="code" class="font-semibold text-gray-700">Bestätigungscode</label>
-        <input 
-          pInputText 
-          id="code" 
-          formControlName="code" 
-          type="text" 
-          placeholder="123456" 
-          maxlength="6" 
-          class="w-full p-3 text-center text-xl tracking-widest font-bold rounded-lg border border-gray-300 hover:border-gray-400 focus:border-gray-800 outline-none transition-colors" />
-      </div>
+      <form [formGroup]="verifyForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-6">
+        
+        <div class="flex flex-col gap-2">
+          <label for="email" class="font-medium text-ink-teal">E-Mail Adresse</label>
+          <input pInputText id="email" formControlName="email" type="email" placeholder="max@muster.de" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm" />
+        </div>
 
-      <!-- Button (Dunkelgrau wie beim Login) -->
-      <p-button 
-        type="submit" 
-        label="Konto freischalten" 
-        icon="pi pi-check" 
-        [disabled]="verifyForm.invalid"
-        styleClass="w-full mt-4 p-3 rounded-lg shadow-md font-bold text-lg text-white bg-gray-800 hover:bg-gray-900 border-none transition-all">
-      </p-button>
+        <div class="flex flex-col gap-2">
+          <label for="code" class="font-medium text-ink-teal">Bestätigungscode</label>
+          <input pInputText id="code" formControlName="code" type="text" placeholder="123456" maxlength="6" class="w-full p-4 text-center text-2xl tracking-[0.5em] font-bold bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm" />
+        </div>
 
-      <!-- Zurück zum Login -->
-      <div class="text-center text-sm mt-2">
-        <a routerLink="/login" class="font-medium text-gray-500 hover:text-gray-800 cursor-pointer transition-colors">
-          <i class="pi pi-arrow-left text-xs mr-1"></i> Zurück zum Login
-        </a>
-      </div>
+        <p-button type="submit" [disabled]="verifyForm.invalid" styleClass="w-full mt-4 p-4 rounded-xl font-bold text-lg text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all shadow-md flex justify-center items-center gap-2">
+          <ng-template pTemplate="content">
+            <i class="pi pi-check-circle"></i> Konto freischalten
+          </ng-template>
+        </p-button>
 
-    </form>
-  </p-card>
-
+      </form>
+    </div>
+  </div>
 </div>
