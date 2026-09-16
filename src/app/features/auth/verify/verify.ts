@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
+import { ApiResponse } from '../../../core/models/appointment.model';
+import { HttpErrorResponse } from '@angular/common/http';
 
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
@@ -30,11 +32,11 @@ export class VerifyComponent {
  onSubmit() {
     if (this.verifyForm.invalid) return;
     this.authService.verify(this.verifyForm.value).subscribe({
-      next: (response: any) => {
+      next: (response: ApiResponse) => {
         this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Konto verifiziert! Du kannst dich jetzt einloggen.'});
         this.router.navigate(['/login']);
       },
-      error: (err: any) => {
+      error: (err: HttpErrorResponse) => {
         this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Falscher Code.'});
       }
     });
