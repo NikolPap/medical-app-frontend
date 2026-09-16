@@ -4,8 +4,7 @@ import { AppointmentService } from '../../core/services/appointment';
 import { Appointment } from '../../core/models/appointment.model';
 import { Router } from '@angular/router'; 
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule } from '@angular/forms';
-import { ScheduleService } from '../../core/services/schedule';
-import { HolidayService } from '../../core/services/holiday';
+import { HttpErrorResponse } from '@angular/common/http';
 
 // PRIMENG IMPORTS
 import { TableModule } from 'primeng/table';
@@ -49,6 +48,8 @@ export class DashboardComponent implements OnInit {
   userRole: string = ''; 
   userEmail: string = ''; 
   minDate: Date = new Date();
+   currentPage: number = 1;
+  itemsPerPage: number = 5;
 
   showStatusDialog: boolean = false;
   selectedAppointment: Appointment | null = null;
@@ -77,7 +78,7 @@ export class DashboardComponent implements OnInit {
         this.applyFilter(this.currentFilter); 
         this.isLoading = false;
       },
-      error: (err: any) => {
+      error: (err: HttpErrorResponse) => {
         console.error("Fehler beim Laden:", err);
         this.isLoading = false;
       }
@@ -97,14 +98,39 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  // Holt den ersten Buchstaben der E-Mail für das Avatar-Bild
-  getInitial(email: string): string {
-    return email ? email.charAt(0).toUpperCase() : '?';
+  // Jetzt nehmen wir den echten Namen statt der E-Mail!
+  getInitial(name: string): string {
+    return name ? name.charAt(0).toUpperCase() : '?';
+  }
+  
+  // Berechnet, welche Termine auf der AKTUELLEN Seite angezeigt werden sollen
+  get paginatedAppointments(): Appointment[] {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
+    return this.filteredAppointments.slice(startIndex, endIndex);
+  }
+
+  // Berechnet die Gesamtzahl der Seiten
+  get totalPages(): number {
+    return Math.ceil(this.filteredAppointments.length / this.itemsPerPage);
+  }
+
+  nextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+    }
+  }
+
+  prevPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+    }
   }
 
   // --- FILTER LOGIK FÜR DIE KARTEN ---
   applyFilter(filterType: string) {
     this.currentFilter = filterType;
+    this.currentPage = 1; 
     const now = new Date();
 
     const validAppointments = this.appointments.filter(a => !(a.patientEmail === a.doctorEmail && a.status === 'CANCELLED'));
@@ -151,11 +177,13 @@ export class DashboardComponent implements OnInit {
         this.showStatusDialog = false; 
         this.loadAppointments(); 
       },
-      error: (err: any) => {
+      error: (err: HttpErrorResponse) => {
         this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Aktion nicht möglich.'});
       }
     });
   }
+
+  
 
   // --- NAVIGATION & POPUPS ---
   logout() {
