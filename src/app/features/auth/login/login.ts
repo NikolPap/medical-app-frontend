@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router'; 
+import { ApiResponse } from '../../../core/models/appointment.model';
+import { HttpErrorResponse } from '@angular/common/http';
 
 
 import { AuthService } from '../../../core/services/auth'; 
@@ -46,12 +48,12 @@ export class Login {
   onSubmit() {
     if (this.loginForm.invalid) return;
     this.authService.login(this.loginForm.value).subscribe({
-      next: (response: any) => {
-        localStorage.setItem('jwt_token', response.token);
+      next: (response: ApiResponse) => {
+        localStorage.setItem('jwt_token', response.token!);
         this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Login erfolgreich!'});
         this.router.navigate(['/dashboard']);
       },
-      error: (err: any) => {
+      error: (err: HttpErrorResponse) => {
         this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Login fehlgeschlagen.'});
       },
     });
