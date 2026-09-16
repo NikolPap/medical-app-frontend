@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractContro
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
 import { MessageService } from 'primeng/api';
+import { HttpErrorResponse } from '@angular/common/http';
 
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
@@ -62,7 +63,7 @@ export class ResetPasswordComponent {
         
         this.step = 2; // Gehe zu Schritt 2!
       },
-      error: (err: any) => {
+      error: (err:  HttpErrorResponse) => {
         this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Falscher Code oder E-Mail.'});
       }
     });
@@ -83,7 +84,7 @@ export class ResetPasswordComponent {
         this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Dein Passwort wurde erfolgreich geändert!'});
         this.router.navigate(['/login']);
       },
-      error: (err: any) => {
+      error: (err:  HttpErrorResponse ) => {
         this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Fehler beim Ändern.'});
       }
     });
