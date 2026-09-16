@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
+import { HttpErrorResponse } from '@angular/common/http';
 
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
@@ -32,7 +33,7 @@ export class ForgotPasswordComponent {
         this.messageService.add({severity: 'info', summary: 'Gesendet', detail: 'Falls die E-Mail existiert, wurde ein Code gesendet.'});
         this.router.navigate(['/reset-password']);
       },
-      error: (err: any) => {
+      error: (err: HttpErrorResponse) => {
         this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Etwas ist schiefgelaufen.'});
       }
     });
