@@ -1,9 +1,9 @@
-<!-- ========================================== -->
-<!-- 👨‍⚕️ DASHBOARD FÜR DEN ARZT -->
-<!-- ========================================== -->
-<div *ngIf="userRole === 'ROLE_DOCTOR'" class="flex h-screen bg-cool-paper font-sans overflow-hidden">
+<!-- GEMEINSAMES LAYOUT FÜR ARZT & PATIENT -->
+<div class="flex h-screen bg-cool-paper font-sans overflow-hidden">
   
-  <!-- 1. DARK SIDEBAR (Ink Teal) -->
+  <!-- ========================================== -->
+  <!-- 1. DARK SIDEBAR (Für alle gleich) -->
+  <!-- ========================================== -->
   <aside class="w-20 md:w-64 bg-ink-teal text-white flex flex-col justify-between transition-all duration-300 z-20 shadow-2xl">
     <div>
       <div class="h-24 flex items-center justify-center md:justify-start md:px-8 border-b border-white/10">
@@ -19,9 +19,16 @@
           <span class="hidden md:block font-medium">Dashboard</span>
         </a>
         
-        <a class="flex items-center gap-4 py-3 px-4 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition-colors cursor-pointer" (click)="openScheduleDialog()">
+        <!-- Nur für Ärzte -->
+        <a *ngIf="userRole === 'ROLE_DOCTOR'" class="flex items-center gap-4 py-3 px-4 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition-colors cursor-pointer" (click)="openScheduleDialog()">
           <i class="pi pi-clock text-lg"></i>
           <span class="hidden md:block font-medium">Arbeitszeiten</span>
+        </a>
+
+        <!-- Nur für Patienten -->
+        <a *ngIf="userRole === 'ROLE_PATIENT'" class="flex items-center gap-4 py-3 px-4 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition-colors cursor-pointer" (click)="openNewAppointmentDialog()">
+          <i class="pi pi-calendar-plus text-lg"></i>
+          <span class="hidden md:block font-medium">Neuer Termin</span>
         </a>
       </nav>
     </div>
@@ -34,220 +41,199 @@
     </div>
   </aside>
 
+
+  <!-- ========================================== -->
   <!-- 2. MAIN CONTENT AREA -->
-  <main class="flex-1 flex flex-col lg:flex-row gap-8 p-8 overflow-y-auto">
+  <!-- ========================================== -->
+  <main class="flex-1 flex flex-col p-6 md:p-8 overflow-y-auto">
     
-    <!-- MITTE: Today's Visits -->
-    <div class="w-full lg:w-1/3 max-w-md flex flex-col gap-6">
-      
-      <div class="mb-2">
-        <h2 class="font-serif text-3xl font-bold text-ink-teal">Heute</h2>
-        <p class="text-gray-500 font-medium mt-1">{{ minDate | date:'EEEE, d. MMMM' }}</p>
-      </div>
-
-      <div *ngIf="todaysAppointments.length === 0" class="p-8 bg-white rounded-3xl shadow-sm text-center text-gray-400 border border-gray-100">
-        Keine Termine für heute.
-      </div>
-
-      <div *ngFor="let appt of todaysAppointments" class="bg-white p-5 rounded-3xl shadow-sm flex items-center justify-between hover:shadow-md transition-shadow border border-gray-100 cursor-pointer group" (click)="openStatusDialog(appt)">
-        <div class="flex items-center gap-4">
-          <p-avatar [label]="getInitial(appt.patientEmail)" size="large" shape="circle" styleClass="bg-cool-paper text-ink-teal font-bold"></p-avatar>
-          <div>
-            <p class="font-bold text-ink-teal text-sm md:text-base">{{ appt.patientEmail.split('@')[0] | titlecase }}</p>
-            <p class="text-xs text-gray-500 font-medium mt-1"><i class="pi pi-clock text-xs mr-1"></i>{{ appt.appointmentDate | date:'HH:mm' }} Uhr</p>
-          </div>
-        </div>
-        <div class="text-gray-300 group-hover:text-warm-brass transition-colors">
-          <i class="pi pi-arrow-right"></i>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- RECHTS: Alle Termine (Listenansicht) -->
-    <div class="flex-1 bg-white rounded-3xl shadow-sm border border-gray-100 p-8 flex flex-col min-h-[600px]">
-      
-      <div class="flex justify-between items-center mb-8 border-b border-gray-100 pb-6">
-        <div>
-          <h3 class="font-serif font-bold text-ink-teal text-2xl">Alle Termine</h3>
-          <p class="text-sm text-gray-500 mt-1">Übersicht deiner anstehenden Patienten</p>
-        </div>
-        <div class="flex items-center gap-3 font-medium text-ink-teal bg-cool-paper px-4 py-2 rounded-full border border-gray-200">
-          <p-avatar [label]="getInitial(userEmail)" shape="circle" styleClass="bg-ink-teal text-white"></p-avatar>
-          Dr. {{ userEmail.split('@')[0] | titlecase }}
-        </div>
-      </div>
-
-      <div class="flex-1 overflow-y-auto pr-4 flex flex-col gap-4">
-        
-        <div *ngIf="filteredAppointments.length === 0" class="text-center p-8 text-gray-400 italic">
-          Keine Termine gefunden.
-        </div>
-
-        <div *ngFor="let appt of filteredAppointments" 
-             class="p-5 rounded-2xl border transition-all hover:shadow-md cursor-pointer relative overflow-hidden"
-             [ngClass]="{
-                'border-gray-200 bg-white': appt.status === 'CONFIRMED' && appt.patientEmail !== appt.doctorEmail,
-                'border-status-ochre/30 bg-orange-50/50': appt.status === 'PENDING',
-                'border-status-brick/30 bg-red-50/50': appt.status === 'CANCELLED' || appt.patientEmail === appt.doctorEmail
-             }"
-             (click)="openStatusDialog(appt)">
-          
-          <!-- Der linke Farb-Balken (Accent Line) -->
-          <div class="absolute left-0 top-0 bottom-0 w-1.5"
-               [ngClass]="{
-                  'bg-status-sage': appt.status === 'CONFIRMED' && appt.patientEmail !== appt.doctorEmail,
-                  'bg-status-ochre': appt.status === 'PENDING',
-                  'bg-status-brick': appt.status === 'CANCELLED' || appt.patientEmail === appt.doctorEmail
-               }">
-          </div>
-          
-          <div class="flex justify-between items-center pl-4">
-            <div class="flex items-center gap-5">
-              <p-avatar *ngIf="appt.patientEmail === appt.doctorEmail" icon="pi pi-ban" shape="circle" styleClass="bg-status-brick text-white"></p-avatar>
-              <p-avatar *ngIf="appt.patientEmail !== appt.doctorEmail" [label]="getInitial(appt.patientEmail)" shape="circle" styleClass="bg-cool-paper text-ink-teal font-bold"></p-avatar>
-              
-              <div>
-                <h4 class="font-bold text-ink-teal text-lg" *ngIf="appt.patientEmail !== appt.doctorEmail">
-                  {{ appt.patientEmail.split('@')[0] | titlecase }}
-                </h4>
-                <h4 class="font-bold text-status-brick text-lg" *ngIf="appt.patientEmail === appt.doctorEmail">
-                  BLOCKIERT / URLAUB
-                </h4>
-                <p class="text-sm text-gray-500 font-medium mt-1"><i class="pi pi-calendar mr-1"></i> {{ appt.appointmentDate | date:'dd.MM.yyyy - HH:mm' }} Uhr</p>
-              </div>
-            </div>
-
-            <!-- UNSER NEUES CUSTOM BADGE FÜR STATUS -->
-            <div>
-              <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" 
-                    [class]="getStatusClasses(appt.status)">
-                {{ appt.status }}
-              </span>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-  </main>
-</div>
-
-
-<!-- ========================================== -->
-<!-- 🤒 DASHBOARD FÜR DEN PATIENTEN -->
-<!-- ========================================== -->
-<div *ngIf="userRole === 'ROLE_PATIENT'" class="min-h-screen bg-cool-paper font-sans pt-12 pb-24">
-  
-  <div class="max-w-6xl mx-auto px-4 md:px-8">
-    
-    <div class="flex justify-between items-center mb-10">
+    <!-- GEMEINSAMER HEADER DER SEITE -->
+    <div class="flex justify-between items-start mb-10">
       <div>
-        <h1 class="font-serif text-4xl font-bold text-ink-teal">Mein Portal</h1>
-        <p class="text-gray-500 mt-2">Verwalte deine Termine schnell und einfach.</p>
+        <h1 class="font-serif text-4xl font-bold text-ink-teal">Willkommen zurück</h1>
+        <p class="text-gray-500 text-lg mt-1">{{ minDate | date:'EEEE, d. MMMM yyyy' }}</p>
       </div>
-      <div class="flex gap-4">
-        <p-button label="Neuer Termin" icon="pi pi-plus" (onClick)="openNewAppointmentDialog()" styleClass="p-3 px-6 rounded-xl shadow-md font-bold text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all"></p-button>
-        <p-button label="Abmelden" icon="pi pi-sign-out" severity="secondary" [text]="true" (click)="logout()"></p-button>
-      </div>
-    </div>
-
-    <!-- DIE 4 SUMMARY CARDS -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
       
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between hover:shadow-md transition-all cursor-pointer relative overflow-hidden group" 
-           [ngClass]="{'ring-2 ring-status-ochre': currentFilter === 'PENDING'}" (click)="applyFilter('PENDING')">
-        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-status-ochre opacity-50 group-hover:opacity-100 transition-opacity"></div>
-        <p class="text-sm font-medium text-gray-500 pl-3">Ausstehend</p>
-        <h3 class="text-4xl font-serif font-bold text-ink-teal mt-2 pl-3">{{ getCount('PENDING') }}</h3>
+      <div class="flex items-center gap-3 bg-white px-5 py-2.5 rounded-full shadow-sm border border-gray-200">
+        <div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-800 font-bold text-sm">
+          {{ getInitial(userEmail) }}
+        </div>
+        <span class="font-medium text-gray-800">{{ userEmail.split('@')[0] | titlecase }}</span>
       </div>
-
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between hover:shadow-md transition-all cursor-pointer relative overflow-hidden group" 
-           [ngClass]="{'ring-2 ring-status-sage': currentFilter === 'CONFIRMED'}" (click)="applyFilter('CONFIRMED')">
-        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-status-sage opacity-50 group-hover:opacity-100 transition-opacity"></div>
-        <p class="text-sm font-medium text-gray-500 pl-3">Bestätigt</p>
-        <h3 class="text-4xl font-serif font-bold text-ink-teal mt-2 pl-3">{{ getCount('CONFIRMED') }}</h3>
-      </div>
-
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between hover:shadow-md transition-all cursor-pointer relative overflow-hidden group" 
-           [ngClass]="{'ring-2 ring-status-brick': currentFilter === 'CANCELLED'}" (click)="applyFilter('CANCELLED')">
-        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-status-brick opacity-50 group-hover:opacity-100 transition-opacity"></div>
-        <p class="text-sm font-medium text-gray-500 pl-3">Storniert</p>
-        <h3 class="text-4xl font-serif font-bold text-ink-teal mt-2 pl-3">{{ getCount('CANCELLED') }}</h3>
-      </div>
-
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between hover:shadow-md transition-all cursor-pointer relative overflow-hidden group" 
-           [ngClass]="{'ring-2 ring-gray-400': currentFilter === 'ALL'}" (click)="applyFilter('ALL')">
-        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-gray-400 opacity-50 group-hover:opacity-100 transition-opacity"></div>
-        <p class="text-sm font-medium text-gray-500 pl-3">Alle Termine</p>
-        <h3 class="text-4xl font-serif font-bold text-ink-teal mt-2 pl-3">{{ filteredAppointments.length }}</h3>
-      </div>
-
     </div>
 
-    <div class="mb-4 flex justify-between items-center" *ngIf="currentFilter !== 'ALL'">
-      <span class="text-sm text-gray-500">Gefilterte Ansicht aktiv.</span>
-      <p-button label="Alle zeigen" icon="pi pi-filter-slash" [text]="true" size="small" (onClick)="applyFilter('ALL')" styleClass="text-ink-teal"></p-button>
-    </div>
 
-    <!-- PATIENTEN TABELLE -->
-    <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
-      <h3 class="font-serif font-bold text-ink-teal text-2xl mb-8">Mein Verlauf</h3>
-      <p-table [value]="filteredAppointments" [loading]="isLoading" [paginator]="true" [rows]="5" responsiveLayout="scroll" styleClass="p-datatable-striped">
-        <ng-template pTemplate="header">
-          <tr>
-            <th pSortableColumn="appointmentDate" class="text-gray-500 font-medium">Datum <p-sortIcon field="appointmentDate"></p-sortIcon></th>
-            <th class="text-gray-500 font-medium">Arzt</th>
-            <th class="text-gray-500 font-medium">Status</th>
-            <th class="text-gray-500 font-medium">Aktion</th>
-          </tr>
-        </ng-template>
+    <!-- 👨‍⚕️ INHALT FÜR DEN ARZT -->
+    <div *ngIf="userRole === 'ROLE_DOCTOR'" class="flex flex-col lg:flex-row gap-6 h-full">
+      <!-- Today's Visits -->
+      <div class="w-full lg:w-1/3 max-w-md flex flex-col gap-4">
+        <div class="mb-2">
+          <h2 class="font-serif text-3xl font-bold text-ink-teal">Heute</h2>
+        </div>
+        <div *ngIf="todaysAppointments.length === 0" class="p-8 bg-white rounded-3xl shadow-sm text-center text-gray-400 border border-gray-100">
+          Keine Termine für heute.
+        </div>
+        <div *ngFor="let appt of todaysAppointments" class="bg-white p-5 rounded-3xl shadow-sm flex items-center justify-between hover:shadow-md transition-shadow border border-gray-100 cursor-pointer group" (click)="openStatusDialog(appt)">
+          <div class="flex items-center gap-4">
+            <p-avatar [label]="getInitial(appt.patientName)" size="large" shape="circle" styleClass="bg-cool-paper text-ink-teal font-bold"></p-avatar>
+            <div>
+              <p class="font-bold text-ink-teal text-sm md:text-base">{{ appt.patientName }}</p>
+              <p class="text-xs text-gray-500 font-medium mt-1"><i class="pi pi-clock text-xs mr-1"></i>{{ appt.appointmentDate | date:'HH:mm' }} Uhr</p>
+            </div>
+          </div>
+          <div class="text-gray-300 group-hover:text-warm-brass transition-colors">
+            <i class="pi pi-arrow-right"></i>
+          </div>
+        </div>
+      </div>
 
-        <ng-template pTemplate="body" let-appt>
-          <tr>
-            <td class="font-medium text-ink-teal">{{ appt.appointmentDate | date:'dd.MM.yyyy - HH:mm' }} Uhr</td>
-            <td>
-              <div class="flex items-center gap-3">
-                <p-avatar [label]="getInitial(appt.doctorEmail)" shape="circle" styleClass="bg-cool-paper text-ink-teal font-bold"></p-avatar>
-                <span class="text-ink-teal font-medium">Dr. {{ appt.doctorEmail.split('@')[0] | titlecase }}</span>
+      <!-- Listenansicht (Alle Termine des Arztes) -->
+      <div class="flex-1 bg-white rounded-3xl shadow-sm border border-gray-100 p-8 flex flex-col min-h-[600px]">
+        <div class="flex justify-between items-center mb-8 border-b border-gray-100 pb-6">
+          <h3 class="font-serif font-bold text-ink-teal text-2xl">Alle Termine</h3>
+        </div>
+        <div class="flex-1 overflow-y-auto pr-4 flex flex-col gap-4">
+          <div *ngIf="filteredAppointments.length === 0" class="text-center p-8 text-gray-400 italic">Keine Termine gefunden.</div>
+          <div *ngFor="let appt of filteredAppointments" class="p-5 rounded-2xl border transition-all hover:shadow-md cursor-pointer relative overflow-hidden"
+               [ngClass]="{
+                  'border-gray-200 bg-white': appt.status === 'CONFIRMED' && appt.patientEmail !== appt.doctorEmail,
+                  'border-status-ochre/30 bg-orange-50/50': appt.status === 'PENDING',
+                  'border-status-brick/30 bg-red-50/50': appt.status === 'CANCELLED' || appt.patientEmail === appt.doctorEmail
+               }"
+               (click)="openStatusDialog(appt)">
+            <div class="absolute left-0 top-0 bottom-0 w-1.5"
+                 [ngClass]="{
+                    'bg-status-sage': appt.status === 'CONFIRMED' && appt.patientEmail !== appt.doctorEmail,
+                    'bg-status-ochre': appt.status === 'PENDING',
+                    'bg-status-brick': appt.status === 'CANCELLED' || appt.patientEmail === appt.doctorEmail
+                 }">
+            </div>
+            <div class="flex justify-between items-center pl-4">
+              <div class="flex items-center gap-5">
+                <p-avatar *ngIf="appt.patientEmail === appt.doctorEmail" icon="pi pi-ban" shape="circle" styleClass="bg-status-brick text-white"></p-avatar>
+                <p-avatar *ngIf="appt.patientEmail !== appt.doctorEmail" [label]="getInitial(appt.patientName)" shape="circle" styleClass="bg-cool-paper text-ink-teal font-bold"></p-avatar>
+                <div>
+                  <h4 class="font-bold text-ink-teal text-lg" *ngIf="appt.patientEmail !== appt.doctorEmail">{{ appt.patientName }}</h4>
+                  <h4 class="font-bold text-status-brick text-lg" *ngIf="appt.patientEmail === appt.doctorEmail">BLOCKIERT / URLAUB</h4>
+                  <p class="text-sm text-gray-500 font-medium mt-1"><i class="pi pi-calendar mr-1"></i> {{ appt.appointmentDate | date:'dd.MM.yyyy - HH:mm' }} Uhr</p>
+                </div>
               </div>
-            </td>
-            <td>
-              <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" [class]="getStatusClasses(appt.status)">
-                {{ appt.status }}
-              </span>
-            </td>
-            <td><p-button icon="pi pi-times" styleClass="p-button-rounded p-button-text p-button-danger hover:bg-red-50" pTooltip="Stornieren" (onClick)="openStatusDialog(appt)"></p-button></td>
-          </tr>
-        </ng-template>
-
-        <ng-template pTemplate="emptymessage">
-          <tr><td colspan="4" class="text-center p-8 text-gray-400 italic">Keine Termine gefunden.</td></tr>
-        </ng-template>
-      </p-table>
+              <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" [class]="getStatusClasses(appt.status)">{{ appt.status }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
+
+   <!-- ========================================== -->
+<!-- 🤒 INHALT FÜR DEN PATIENTEN -->
+<!-- ========================================== -->
+<div *ngIf="userRole === 'ROLE_PATIENT'" class="flex flex-col gap-6 w-full"> <!-- HIER: 'max-w-5xl' entfernt, nutzt jetzt volle Breite! -->
+  <!-- DIE 4 SUMMARY CARDS -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8 w-full"> <!-- HIER: 'w-full' hinzugefügt -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between hover:shadow-md transition-all cursor-pointer relative overflow-hidden group" [ngClass]="{'ring-2 ring-status-ochre': currentFilter === 'PENDING'}" (click)="applyFilter('PENDING')">
+      <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-status-ochre opacity-50 group-hover:opacity-100 transition-opacity"></div>
+      <p class="text-sm font-medium text-gray-500 pl-3">Ausstehend</p>
+      <h3 class="text-4xl font-serif font-bold text-ink-teal mt-2 pl-3">{{ getCount('PENDING') }}</h3>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between hover:shadow-md transition-all cursor-pointer relative overflow-hidden group" [ngClass]="{'ring-2 ring-status-sage': currentFilter === 'CONFIRMED'}" (click)="applyFilter('CONFIRMED')">
+      <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-status-sage opacity-50 group-hover:opacity-100 transition-opacity"></div>
+      <p class="text-sm font-medium text-gray-500 pl-3">Bestätigt</p>
+      <h3 class="text-4xl font-serif font-bold text-ink-teal mt-2 pl-3">{{ getCount('CONFIRMED') }}</h3>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between hover:shadow-md transition-all cursor-pointer relative overflow-hidden group" [ngClass]="{'ring-2 ring-status-brick': currentFilter === 'CANCELLED'}" (click)="applyFilter('CANCELLED')">
+      <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-status-brick opacity-50 group-hover:opacity-100 transition-opacity"></div>
+      <p class="text-sm font-medium text-gray-500 pl-3">Storniert</p>
+      <h3 class="text-4xl font-serif font-bold text-ink-teal mt-2 pl-3">{{ getCount('CANCELLED') }}</h3>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between hover:shadow-md transition-all cursor-pointer relative overflow-hidden group" [ngClass]="{'ring-2 ring-ink-teal': currentFilter === 'ALL'}" (click)="applyFilter('ALL')">
+      <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-gray-400 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+      <p class="text-sm font-medium text-gray-500 pl-3">Alle Termine</p>
+      <h3 class="text-4xl font-serif font-bold text-ink-teal mt-2 pl-3">{{ filteredAppointments.length }}</h3>
+    </div>
+  </div>
+
+  <div class="mb-4 flex justify-end" *ngIf="currentFilter !== 'ALL'">
+    <p-button label="Filter zurücksetzen" icon="pi pi-times" [text]="true" size="small" (onClick)="applyFilter('ALL')" styleClass="text-gray-500 hover:text-ink-teal"></p-button>
+  </div>
+
+  <!-- PATIENTEN TABELLE (Die neue Listenansicht!) -->
+  <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden w-full">
+    <div class="p-6 border-b border-gray-100">
+      <h3 class="font-serif font-bold text-ink-teal text-xl">Mein Verlauf</h3>
+    </div>
+
+    <div *ngIf="filteredAppointments.length === 0" class="p-12 text-center text-gray-400 italic">
+      Keine Termine gefunden.
+    </div>
+
+    <div class="flex flex-col">
+      <div *ngFor="let appt of paginatedAppointments; let last = last" 
+           class="flex justify-between items-center p-6 relative hover:bg-gray-50 transition-colors cursor-pointer group"
+           [ngClass]="{'border-b border-gray-100': !last}"
+           (click)="openStatusDialog(appt)">
+        
+        <div class="absolute left-0 top-0 bottom-0 w-1.5"
+             [ngClass]="{
+                'bg-status-sage': appt.status === 'CONFIRMED',
+                'bg-status-ochre': appt.status === 'PENDING',
+                'bg-status-brick': appt.status === 'CANCELLED'
+             }">
+        </div>
+
+        <div class="pl-4">
+          <p class="text-ink-teal font-bold text-lg">{{ appt.appointmentDate | date:'dd.MM.yyyy – HH:mm' }} Uhr</p>
+          
+          <!-- HIER: Der echte Arztname UND Fachrichtung! -->
+          <div class="flex items-center gap-3 mt-2">
+            <p-avatar [label]="getInitial(appt.doctorName)" shape="circle" styleClass="bg-cool-paper text-ink-teal font-bold w-8 h-8 text-sm"></p-avatar>
+            <div class="flex flex-col">
+              <span class="text-gray-900 font-medium text-sm">Dr. {{ appt.doctorName | titlecase }}</span>
+              <span class="text-xs text-gray-500">{{ appt.doctorSpecialty || 'Allgemeinmedizin' }}</span>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="pr-2 font-bold text-sm tracking-wide uppercase"
+             [ngClass]="{
+                'text-status-sage': appt.status === 'CONFIRMED',
+                'text-status-ochre': appt.status === 'PENDING',
+                'text-status-brick': appt.status === 'CANCELLED'
+             }">
+          {{ appt.status === 'CONFIRMED' ? 'Bestätigt' : appt.status === 'PENDING' ? 'Ausstehend' : 'Storniert' }}
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINIERUNG -->
+    <div *ngIf="totalPages > 1" class="p-4 border-t border-gray-100 flex justify-end gap-2 bg-gray-50">
+      <button (click)="prevPage()" [disabled]="currentPage === 1" class="px-4 py-2 text-sm font-bold rounded-xl transition-all border" [ngClass]="currentPage === 1 ? 'text-gray-400 border-gray-200 cursor-not-allowed' : 'text-ink-teal border-gray-300 hover:bg-white shadow-sm'"><i class="pi pi-chevron-left text-xs mr-1"></i> Zurück</button>
+      <button (click)="nextPage()" [disabled]="currentPage === totalPages" class="px-4 py-2 text-sm font-bold rounded-xl transition-all border" [ngClass]="currentPage === totalPages ? 'text-gray-400 border-gray-200 cursor-not-allowed' : 'text-ink-teal border-gray-300 hover:bg-white shadow-sm'">Weiter <i class="pi pi-chevron-right text-xs ml-1"></i></button>
+    </div>
   </div>
 </div>
 
-
-<!-- POP-UPS -->
+<!-- ========================================== -->
+<!-- KIND-COMPONENTS (POPUPS) -->
+<!-- ========================================== -->
 <app-book-appointment #bookAppointmentModal (appointmentBooked)="loadAppointments()"></app-book-appointment>
 <app-doctor-settings #doctorSettingsModal (settingsChanged)="loadAppointments()"></app-doctor-settings>
 
-<p-dialog header="Bearbeiten" [modal]="true" [(visible)]="showStatusDialog" [style]="{width: '25rem'}" styleClass="rounded-2xl">
+<p-dialog header="Status ändern" [modal]="true" [(visible)]="showStatusDialog" [style]="{width: '25rem'}" styleClass="rounded-3xl shadow-2xl font-sans">
   <div class="flex flex-col gap-5 p-2" *ngIf="selectedAppointment">
       <ng-container *ngIf="userRole === 'ROLE_DOCTOR'">
-        <p class="text-gray-600 font-medium text-center">Was möchtest du tun?</p>
+        <p class="text-gray-600 font-medium text-center">Was möchtest du mit diesem Termin tun?</p>
         <div class="flex flex-col gap-3 mt-2">
-          <p-button label="Termin BESTÄTIGEN" icon="pi pi-check" styleClass="w-full p-3 rounded-xl font-bold bg-status-sage border-none hover:bg-status-sage/90 transition-all" (onClick)="changeStatus('CONFIRMED')"></p-button>
-          <p-button label="Termin STORNIEREN" icon="pi pi-times" styleClass="w-full p-3 rounded-xl font-bold bg-status-brick border-none hover:bg-status-brick/90 transition-all" (click)="changeStatus('CANCELLED')"></p-button>
+          <p-button label="Termin BESTÄTIGEN" icon="pi pi-check" styleClass="w-full p-3 rounded-xl font-bold bg-status-sage border-none hover:bg-status-sage/90 transition-all text-white shadow-sm" (onClick)="changeStatus('CONFIRMED')"></p-button>
+          <p-button label="Termin STORNIEREN" icon="pi pi-times" styleClass="w-full p-3 rounded-xl font-bold bg-status-brick border-none hover:bg-status-brick/90 transition-all text-white shadow-sm" (click)="changeStatus('CANCELLED')"></p-button>
         </div>
       </ng-container>
+
       <ng-container *ngIf="userRole === 'ROLE_PATIENT'">
         <p class="text-gray-600 font-medium text-center mb-2">Möchtest du diesen Termin stornieren?</p>
-        <p-button label="Ja, STORNIEREN" icon="pi pi-times" styleClass="w-full p-3 rounded-xl font-bold bg-status-brick border-none hover:bg-status-brick/90 transition-all" (onClick)="changeStatus('CANCELLED')"></p-button>
+        <p-button label="Ja, STORNIEREN" icon="pi pi-times" styleClass="w-full p-3 rounded-xl font-bold bg-status-brick border-none hover:bg-status-brick/90 transition-all text-white shadow-sm" (onClick)="changeStatus('CANCELLED')"></p-button>
       </ng-container>
   </div>
 </p-dialog>
