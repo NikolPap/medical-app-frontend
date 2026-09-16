@@ -8,6 +8,7 @@ import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
 import { CalendarModule } from 'primeng/calendar';
 import { ButtonModule } from 'primeng/button';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-book-appointment',
@@ -17,11 +18,14 @@ import { ButtonModule } from 'primeng/button';
 })
 export class BookAppointmentComponent implements OnInit {
 
-  @Output() appointmentBooked = new EventEmitter<void>(); // Meldet dem Dashboard, dass die Tabelle aktualisiert werden muss!
+  @Output() appointmentBooked = new EventEmitter<void>(); 
 
   showDialog: boolean = false;
   newAppointmentForm: FormGroup;
-  doctors: any[] = [];
+  
+  // STRICKT TYPISIERT
+  doctors: { label: string, value: number }[] = []; 
+  
   minDate: Date = new Date();
   availableSlots: string[] = [];
   selectedTimeSlot: string = '';
@@ -44,8 +48,8 @@ export class BookAppointmentComponent implements OnInit {
 
   loadDoctors() {
     this.appointmentService.getAllDoctors().subscribe({
-      next: (docs) => {
-        this.doctors = docs.map((doc: any) => ({ label: doc.email, value: doc.id }));
+      next: (docs: { email: string, id: number }[]) => {
+        this.doctors = docs.map(doc => ({ label: doc.email, value: doc.id }));
       }
     });
   }
@@ -66,12 +70,12 @@ export class BookAppointmentComponent implements OnInit {
       const formattedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
       this.appointmentService.getAvailableSlots(doctorId, formattedDate).subscribe({
-        next: (slots) => {
+        next: (slots: string[]) => {
           this.availableSlots = slots;
           this.selectedTimeSlot = '';
           this.newAppointmentForm.patchValue({ appointmentTime: '' });
         },
-        error: (err) => console.error("Fehler beim Laden der Slots", err)
+        error: (err: HttpErrorResponse) => console.error("Fehler beim Laden der Slots", err)
       });
     }
   }
@@ -98,9 +102,9 @@ export class BookAppointmentComponent implements OnInit {
       next: () => {
         this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Termin wurde erfolgreich gebucht!'});
         this.showDialog = false;
-        this.appointmentBooked.emit(); // <--- SAGT DEM DASHBOARD BESCHEID!
+        this.appointmentBooked.emit(); 
       },
-      error: (err: any) => {
+      error: (err: HttpErrorResponse) => {
         this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Termin konnte nicht gebucht werden.'});
       }
     });
