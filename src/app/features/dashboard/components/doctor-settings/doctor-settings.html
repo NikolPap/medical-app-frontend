@@ -1,5 +1,12 @@
 <!-- POP-UP: EINSTELLUNGEN & ARBEITSZEITEN -->
 <p-dialog header="Einstellungen & Arbeitszeiten" [modal]="true" [(visible)]="showDialog" [style]="{width: '38rem'}" styleClass="rounded-3xl shadow-2xl">
+
+   <p-confirmDialog
+    [style]="{width: '26rem'}"
+    styleClass="rounded-2xl"
+    acceptButtonStyleClass="p-button-danger rounded-md px-4 py-2"
+    rejectButtonStyleClass="p-button-text rounded-md px-4 py-2">
+  </p-confirmDialog>
     
   <div class="px-2 pb-4 font-sans">
     
@@ -46,13 +53,12 @@
           inputStyleClass="w-full h-full rounded-xl border-red-200 focus:border-status-brick">
         </p-calendar>
         
-        <p-button 
-          label="Blockieren" 
-          icon="pi pi-ban" 
-          [disabled]="!blockedDate" 
-          (onClick)="blockDay()" 
-          styleClass="h-[48px] px-6 whitespace-nowrap rounded-xl font-bold text-white bg-status-brick hover:bg-status-brick/90 border-none transition-all shadow-md">
-        </p-button>
+      <p-button 
+  label="Blockieren" 
+  icon="pi pi-ban" 
+  (onClick)="blockDay()" 
+  styleClass="h-[48px] px-6 whitespace-nowrap rounded-xl font-bold text-white bg-status-brick hover:bg-status-brick/90 border-none transition-all shadow-md">
+</p-button>
       </div>
 
       <!-- LISTE DER BEREITS GESPEICHERTEN URLAUBE -->
