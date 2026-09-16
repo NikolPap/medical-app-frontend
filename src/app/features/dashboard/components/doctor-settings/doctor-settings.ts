@@ -5,6 +5,8 @@ import { AppointmentService } from '../../../../core/services/appointment';
 import { ScheduleService } from '../../../../core/services/schedule';
 import { HolidayService } from '../../../../core/services/holiday';
 import { MessageService, ConfirmationService } from 'primeng/api';
+import { DoctorSchedule } from '../../../../core/models/appointment.model';
+import { DoctorHoliday } from '../../../../core/models/appointment.model';
 
 import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
@@ -18,11 +20,11 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule, DialogModule, DropdownModule, CalendarModule, ButtonModule, TooltipModule, ConfirmDialogModule],
   providers: [ConfirmationService],
-  templateUrl: './doctor-settings.html'
+ templateUrl: './doctor-settings.html'
 })
 export class DoctorSettingsComponent implements OnInit {
 
-  @Output() settingsChanged = new EventEmitter<void>(); // Meldet dem Dashboard Änderungen!
+  @Output() settingsChanged = new EventEmitter<void>(); 
 
   showDialog: boolean = false;
   minDate: Date = new Date();
@@ -36,15 +38,15 @@ export class DoctorSettingsComponent implements OnInit {
   ];
   selectedDuration: number = 30;
 
-  // Urlaub-Settings
+  // Urlaub-Settings (STRICT TYPED!)
   blockedDate: Date | Date[] | null = null;
-  myHolidays: any[] = [];
-  groupedHolidays: any[] = [];
+  myHolidays: DoctorHoliday[] = [];
+  groupedHolidays: { startDate: string, endDate: string, ids: number[] }[] = [];
 
-  // Schichten-Settings
+  // Schichten-Settings (STRICT TYPED!)
   scheduleForm: FormGroup;
-  mySchedule: any[] = [];
-  groupedSchedule: { dayOfWeek: string, shifts: any[] }[] = [];
+  mySchedule: DoctorSchedule[] = [];
+  groupedSchedule: { dayOfWeek: string, shifts: DoctorSchedule[] }[] = [];
   editingScheduleId: number | null = null;
 
   constructor(
@@ -72,8 +74,8 @@ export class DoctorSettingsComponent implements OnInit {
     this.showDialog = true;
   }
 
-  // --- DAUER (DURATION) ---
   loadDoctorDuration() {
+    // Hier lassen wir any für die Ärzte-Liste, da diese aus dem AuthController kommt und kein eigenes Modell braucht
     this.appointmentService.getAllDoctors().subscribe({
       next: (docs) => {
         const token = localStorage.getItem('jwt_token');
@@ -93,7 +95,7 @@ export class DoctorSettingsComponent implements OnInit {
       next: () => {
         this.messageService.add({severity: 'success', summary: 'Erfolg', detail: `Dauer auf ${this.selectedDuration} Min. geändert!`});
       },
-      error: (err: any) => {
+      error: (err: { error: { error: string } }) => {
         this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Konnte Dauer nicht ändern.'});
       }
     });
@@ -102,20 +104,22 @@ export class DoctorSettingsComponent implements OnInit {
   // --- URLAUB (HOLIDAYS) ---
   loadMyHolidays() {
     this.holidayService.getMyHolidays().subscribe({
-      next: (data) => {
+      next: (data: DoctorHoliday[]) => {
         this.myHolidays = data;
         this.groupHolidays(data);
       }
     });
   }
 
-  groupHolidays(holidays: any[]) {
+  groupHolidays(holidays: DoctorHoliday[]) {
     if (!holidays || holidays.length === 0) {
       this.groupedHolidays = [];
       return;
     }
     const sorted = [...holidays].sort((a, b) => new Date(a.holidayDate).getTime() - new Date(b.holidayDate).getTime());
-    const grouped = [];
+    
+    // Typisierung der Gruppen
+    const grouped: { startDate: string, endDate: string, ids: number[] }[] = [];
     let currentGroup = { startDate: sorted[0].holidayDate, endDate: sorted[0].holidayDate, ids: [sorted[0].id] };
 
     for (let i = 1; i < sorted.length; i++) {
@@ -137,12 +141,19 @@ export class DoctorSettingsComponent implements OnInit {
   }
 
   blockDay() {
-    if (!this.blockedDate) return;
+    if (!this.blockedDate) {
+      this.messageService.add({severity: 'warn', summary: 'Achtung', detail: 'Bitte wähle zuerst ein Datum aus!'});
+      return;
+    }
 
     let startDate: Date;
     let endDate: Date;
 
     if (Array.isArray(this.blockedDate)) {
+      if (!this.blockedDate[0]) {
+        this.messageService.add({severity: 'warn', summary: 'Achtung', detail: 'Bitte wähle zuerst ein Datum aus!'});
+        return;
+      }
       startDate = this.blockedDate[0];
       endDate = this.blockedDate[1] ? this.blockedDate[1] : this.blockedDate[0]; 
     } else {
@@ -150,9 +161,6 @@ export class DoctorSettingsComponent implements OnInit {
       endDate = this.blockedDate;
     }
 
-    if (!startDate) return;
-
-    // Duplikate prüfen
     const isAlreadyBlocked = this.myHolidays.some(h => {
       const hDate = new Date(h.holidayDate);
       hDate.setHours(0,0,0,0);
@@ -190,9 +198,9 @@ export class DoctorSettingsComponent implements OnInit {
             this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Urlaub eingetragen!'});
             this.blockedDate = null; 
             this.loadMyHolidays(); 
-            this.settingsChanged.emit(); // Dashboard-Tabelle aktualisieren!
+            this.settingsChanged.emit(); 
           },
-          error: (err: any) => this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Fehler beim Speichern.'})
+          error: (err: { error: { error: string } }) => this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Fehler beim Speichern.'})
         });
       }
     });
@@ -216,7 +224,7 @@ export class DoctorSettingsComponent implements OnInit {
               if (deletedCount === holidayIds.length) {
                 this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Urlaubszeitraum gelöscht!'});
                 this.loadMyHolidays(); 
-                this.settingsChanged.emit(); // Dashboard-Tabelle aktualisieren!
+                this.settingsChanged.emit(); 
               }
             }
           });
@@ -226,30 +234,30 @@ export class DoctorSettingsComponent implements OnInit {
   }
 
   // --- SCHICHTEN (SCHEDULE) ---
-   loadMySchedule() {
+  loadMySchedule() {
     this.scheduleService.getMySchedule().subscribe({
-      next: (data) => {
+      next: (data: DoctorSchedule[]) => {
         this.mySchedule = data;
         const dayOrder: { [key: string]: number } = {
           'MONDAY': 1, 'TUESDAY': 2, 'WEDNESDAY': 3, 'THURSDAY': 4, 'FRIDAY': 5, 'SATURDAY': 6, 'SUNDAY': 7
         };
-        const groupedMap = new Map<string, any[]>();
+        const groupedMap = new Map<string, DoctorSchedule[]>();
         
-        data.forEach((s: any) => {
+        data.forEach((s: DoctorSchedule) => {
           if (!groupedMap.has(s.dayOfWeek)) groupedMap.set(s.dayOfWeek, []);
           groupedMap.get(s.dayOfWeek)?.push(s);
         });
         
         this.groupedSchedule = Array.from(groupedMap.entries()).map(([day, shifts]) => {
-          // BUG FIX: Wir prüfen, ob startTime existiert, bevor wir localeCompare aufrufen!
-          shifts.sort((a: any, b: any) => {
+          shifts.sort((a: DoctorSchedule, b: DoctorSchedule) => {
             const timeA = a?.startTime || '';
             const timeB = b?.startTime || '';
             return timeA.localeCompare(timeB);
           });
           return { dayOfWeek: day, shifts: shifts };
         }).sort((a, b) => dayOrder[a.dayOfWeek] - dayOrder[b.dayOfWeek]);
-      }
+      },
+      error: (err) => console.error("Fehler beim Laden des Plans", err)
     });
   }
 
@@ -273,18 +281,18 @@ export class DoctorSettingsComponent implements OnInit {
     }
   }
 
-  private sendSaveRequest(requestData: any) {
+  private sendSaveRequest(requestData: { dayOfWeek: string, startTime: string, endTime: string }) {
     this.scheduleService.saveSchedule(requestData).subscribe({
       next: () => {
         this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Arbeitszeit gespeichert!'});
         this.scheduleForm.reset();
         this.loadMySchedule(); 
       },
-      error: (err: any) => this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Fehler beim Speichern.'})
+      error: (err: { error: { error: string } }) => this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Fehler beim Speichern.'})
     });
   }
 
-  editSchedule(schedule: any) {
+  editSchedule(schedule: DoctorSchedule) {
     this.editingScheduleId = schedule.id; 
     this.scheduleForm.patchValue({
       dayOfWeek: schedule.dayOfWeek,
