@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { DoctorHoliday } from '../models/appointment.model';
-import { ApiResponse } from '../models/appointment.model';
+import { DoctorHoliday, ApiResponse } from '../models/appointment.model';
 
 @Injectable({
   providedIn: 'root'
@@ -13,31 +12,19 @@ export class HolidayService {
 
   constructor(private http: HttpClient) { }
 
-  // 1. Urlaub eintragen
- addHoliday(date: string): Observable<ApiResponse> {
-    const token = localStorage.getItem('jwt_token');
-    const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
-   return this.http.post<ApiResponse>(`${this.API_URL}?date=${date}`, {}, { headers });
+  addHoliday(date: string): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.API_URL}?date=${date}`, {});
   }
 
-  // 2. Alle Urlaube abrufen
-   getMyHolidays(): Observable<DoctorHoliday[]> { // <-- TYP GEÄNDERT
-    const token = localStorage.getItem('jwt_token');
-    const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
-   return this.http.get<DoctorHoliday[]>(`${this.API_URL}/me`, { headers });
+  getMyHolidays(): Observable<DoctorHoliday[]> { 
+    return this.http.get<DoctorHoliday[]>(`${this.API_URL}/me`);
   }
 
-  // 3. Urlaub löschen
-    deleteHoliday(id: number): Observable<ApiResponse> {
-    const token = localStorage.getItem('jwt_token');
-    const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
-    return this.http.delete<ApiResponse>(`${this.API_URL}/${id}`, { headers });
+  deleteHoliday(id: number): Observable<ApiResponse> {
+    return this.http.delete<ApiResponse>(`${this.API_URL}/${id}`);
   }
 
-  // NEU: Akzeptiert Start- und Enddatum
   addHolidayRange(startDate: string, endDate: string): Observable<ApiResponse> {
-    const token = localStorage.getItem('jwt_token');
-    const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
-   return this.http.post<ApiResponse>(`${this.API_URL}?startDate=${startDate}&endDate=${endDate}`, {}, { headers });
+    return this.http.post<ApiResponse>(`${this.API_URL}?startDate=${startDate}&endDate=${endDate}`, {});
   }
 }
