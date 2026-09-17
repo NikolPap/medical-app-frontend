@@ -11,7 +11,6 @@ export class AuthService {
 
   constructor(private http: HttpClient) {}
    
-  // STRIKTE TYPISIERUNG STATT 'ANY'
   login(loginData: unknown): Observable<ApiResponse>  {
     return this.http.post<ApiResponse>(`${this.API_URL}/login`, loginData);
   }
