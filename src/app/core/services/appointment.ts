@@ -1,10 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Appointment } from '../models/appointment.model';
 import { ApiResponse } from '../models/appointment.model';
 import { DoctorInfo } from '../models/appointment.model';
-
 
 @Injectable({
   providedIn: 'root',
@@ -14,41 +13,33 @@ export class AppointmentService {
 
   constructor(private http: HttpClient) {}
 
+  // 1. Termine holen (Token wird jetzt automatisch vom Interceptor hinzugefügt!)
   getMyAppointments(): Observable<Appointment[]> {
-    const token = localStorage.getItem('jwt_token');
-    const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
-    return this.http.get<Appointment[]>(`${this.API_URL}/me`, { headers });
+    return this.http.get<Appointment[]>(`${this.API_URL}/me`);
   }
 
-  // <ApiResponse> statt <any>
+  // 2. Status ändern
   updateAppointmentStatus(id: number, newStatus: string): Observable<ApiResponse> {
-    const token = localStorage.getItem(`jwt_token`);
-    const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
-    return this.http.put<ApiResponse>(`${this.API_URL}/${id}/status?status=${newStatus}`, {}, { headers });
+    return this.http.put<ApiResponse>(`${this.API_URL}/${id}/status?status=${newStatus}`, {});
   }
 
-  // <DoctorInfo[]> statt <any[]>
+  // 3. Alle Ärzte holen
   getAllDoctors(): Observable<DoctorInfo[]> {
-    const token = localStorage.getItem('jwt_token');
-    const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
-    return this.http.get<DoctorInfo[]>('http://localhost:8080/api/auth/doctors', { headers });
+    return this.http.get<DoctorInfo[]>('http://localhost:8080/api/auth/doctors');
   }
 
-  // <ApiResponse> statt <any> (Beim Input können wir 'unknown' nehmen oder ein RequestDto bauen)
+  // 4. Termin buchen
   createAppointment(appointmentData: unknown): Observable<ApiResponse> {
-    const token = localStorage.getItem('jwt_token');
-    const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
-    return this.http.post<ApiResponse>(this.API_URL, appointmentData, { headers });
+    return this.http.post<ApiResponse>(this.API_URL, appointmentData);
   }
 
+  // 5. Freie Slots (Darf auch ohne Token klappen, aber mit Token schadet es auch nicht)
   getAvailableSlots(doctorId: number, date: string): Observable<string[]> {
     return this.http.get<string[]>(`${this.API_URL}/available-slots?doctorId=${doctorId}&date=${date}`);
   }
 
-  // (Optional: Wenn du blockEntireDay noch benutzt, ansonsten löschen!)
+  // (Optional: Kannst du löschen, wenn wir jetzt die Holiday-Tabelle nutzen!)
   blockEntireDay(date: string): Observable<ApiResponse> {
-    const token = localStorage.getItem('jwt_token');
-    const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
-    return this.http.post<ApiResponse>(`${this.API_URL}/block-day?date=${date}`, {}, { headers });
+    return this.http.post<ApiResponse>(`${this.API_URL}/block-day?date=${date}`, {});
   }
 }
