@@ -65,8 +65,25 @@
               <input pInputText id="lastName" formControlName="lastName" type="text" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm" />
             </div>
           </div>
+<!-- Gemeinsames Feld: Telefonnummer -->
+          <div class="flex flex-col gap-2">
+            <label for="phoneNumber" class="font-medium text-ink-teal">Telefonnummer</label>
+            <input pInputText id="phoneNumber" formControlName="phoneNumber" type="tel" placeholder="+49 123 456789" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none shadow-sm" />
+          </div>
 
-          <!-- Spezifische Felder NUR für Ärzte -->
+          <!-- Spezifische Felder NUR für PATIENTEN -->
+          <ng-container *ngIf="registerForm.get('role')?.value === 'ROLE_PATIENT'">
+            <div class="flex flex-col gap-2">
+              <label class="font-medium text-ink-teal">Geschlecht</label>
+              <p-dropdown [options]="genderOptions" formControlName="gender" placeholder="Bitte wählen" optionLabel="label" optionValue="value" styleClass="w-full rounded-xl border-gray-200" inputStyleClass="p-4"></p-dropdown>
+            </div>
+            <div class="flex flex-col gap-2">
+              <label class="font-medium text-ink-teal">Versicherungsart</label>
+              <p-dropdown [options]="insuranceOptions" formControlName="insuranceType" placeholder="Bitte wählen" optionLabel="label" optionValue="value" styleClass="w-full rounded-xl border-gray-200" inputStyleClass="p-4"></p-dropdown>
+            </div>
+          </ng-container>
+
+          <!-- Spezifische Felder NUR für ÄRZTE -->
           <ng-container *ngIf="registerForm.get('role')?.value === 'ROLE_DOCTOR'">
             <div class="flex flex-col gap-2">
               <label for="specialty" class="font-medium text-ink-teal">Fachrichtung</label>
@@ -77,7 +94,6 @@
               <input pInputText id="address" formControlName="address" type="text" placeholder="Straße, PLZ, Ort" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none shadow-sm" />
             </div>
           </ng-container>
-
           <p-button type="button" label="Weiter" icon="pi pi-arrow-right" iconPos="right" [disabled]="!isStep1Valid()" (onClick)="nextStep()" styleClass="w-full mt-4 p-4 rounded-xl font-bold text-lg text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all shadow-md"></p-button>
 
         </ng-container>
