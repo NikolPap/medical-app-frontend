@@ -4,7 +4,6 @@ import { AppointmentService } from '../../core/services/appointment';
 import { Appointment } from '../../core/models/appointment.model';
 import { Router } from '@angular/router'; 
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule } from '@angular/forms';
-import { HttpErrorResponse } from '@angular/common/http';
 
 // PRIMENG IMPORTS
 import { TableModule } from 'primeng/table';
@@ -22,7 +21,6 @@ import { AvatarModule } from 'primeng/avatar';
 
 import { BookAppointmentComponent } from './components/book-appointment/book-appointment';
 import { DoctorSettingsComponent } from './components/doctor-settings/doctor-settings';
-
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -42,14 +40,22 @@ export class DashboardComponent implements OnInit {
 
   appointments: Appointment[] = [];
   filteredAppointments: Appointment[] = []; 
-  currentFilter: string = 'ALL'; 
   isLoading: boolean = true;
   
   userRole: string = ''; 
   userEmail: string = ''; 
   minDate: Date = new Date();
-   currentPage: number = 1;
+  
+  // PAGINATION (PATIENT)
+  currentPage: number = 1;
   itemsPerPage: number = 5;
+
+  // NEU: STATUS- & VIEW-CONTROLS AUS DEINEM HTML!
+  currentFilter: string = 'ALL'; 
+  doctorView: 'CURRENT' | 'PAST' | 'CANCELLED' = 'CURRENT'; // Für die 3 Tabs des Arztes
+  historyView: 'UPCOMING' | 'PAST' = 'UPCOMING'; // Für die 2 Tabs des Patienten
+  
+  groupedDoctorAppointments: { label: string, items: Appointment[] }[] = []; // Gruppierte Liste für den Arzt
 
   showStatusDialog: boolean = false;
   selectedAppointment: Appointment | null = null;
@@ -75,17 +81,27 @@ export class DashboardComponent implements OnInit {
     this.appointmentService.getMyAppointments().subscribe({
       next: (data: Appointment[]) => {
         this.appointments = data;
-        this.applyFilter(this.currentFilter); 
+        
+        // UI aktualisieren je nach Rolle
+        if (this.userRole === 'ROLE_DOCTOR') {
+          this.updateDoctorView();
+        } else {
+          this.updatePatientView();
+        }
+        
         this.isLoading = false;
       },
-      error: (err: HttpErrorResponse) => {
+      error: (err: any) => {
         console.error("Fehler beim Laden:", err);
         this.isLoading = false;
       }
     });
   }
 
-  // Gibt nur die bestätigten Termine von HEUTE zurück (Für die linke Spalte beim Arzt)
+  // ==========================================
+  // ARZT LOGIK (DOCTOR VIEW)
+  // ==========================================
+
   get todaysAppointments(): Appointment[] {
     const today = new Date();
     return this.appointments.filter(a => {
@@ -94,73 +110,162 @@ export class DashboardComponent implements OnInit {
              apptDate.getMonth() === today.getMonth() &&
              apptDate.getFullYear() === today.getFullYear() &&
              a.status === 'CONFIRMED' && 
-             a.patientEmail !== a.doctorEmail; // Urlaube ausblenden
+             a.patientEmail !== a.doctorEmail;
     });
   }
 
-  // Jetzt nehmen wir den echten Namen statt der E-Mail!
-  getInitial(name: string): string {
-    return name ? name.charAt(0).toUpperCase() : '?';
-  }
-  
-  // Berechnet, welche Termine auf der AKTUELLEN Seite angezeigt werden sollen
-  get paginatedAppointments(): Appointment[] {
-    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-    const endIndex = startIndex + this.itemsPerPage;
-    return this.filteredAppointments.slice(startIndex, endIndex);
+  get pendingAppointmentsCount(): number {
+    return this.appointments.filter(a => a.status === 'PENDING').length;
   }
 
-  // Berechnet die Gesamtzahl der Seiten
-  get totalPages(): number {
-    return Math.ceil(this.filteredAppointments.length / this.itemsPerPage);
+  setDoctorView(view: 'CURRENT' | 'PAST' | 'CANCELLED') {
+    this.doctorView = view;
+    this.currentFilter = 'ALL'; // Reset Filter
+    this.updateDoctorView();
   }
 
-  nextPage() {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
+  showPendingOnly() {
+    this.currentFilter = 'PENDING';
+    this.updateDoctorView();
+  }
+
+  resetDoctorFilter() {
+    this.currentFilter = 'ALL';
+    this.updateDoctorView();
+  }
+
+  updateDoctorView() {
+    const now = new Date();
+    let valid = this.appointments.filter(a => !(a.patientEmail === a.doctorEmail && a.status === 'CANCELLED'));
+
+    // 1. Wenn PENDING aktiv ist, nur PENDING zeigen!
+    if (this.currentFilter === 'PENDING') {
+      valid = valid.filter(a => a.status === 'PENDING');
+    } else {
+      // 2. Ansonsten nach Tabs filtern (CURRENT, PAST, CANCELLED)
+      if (this.doctorView === 'CURRENT') {
+        valid = valid.filter(a => new Date(a.appointmentDate) >= now && a.status !== 'CANCELLED');
+      } else if (this.doctorView === 'PAST') {
+        valid = valid.filter(a => new Date(a.appointmentDate) < now && a.status !== 'CANCELLED');
+      } else if (this.doctorView === 'CANCELLED') {
+        valid = valid.filter(a => a.status === 'CANCELLED');
+      }
     }
+
+    // Chronologisch sortieren
+    valid.sort((a, b) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime());
+    this.filteredAppointments = valid;
+
+    // Gruppieren nach Datum (z.B. "Montag, 15. Dezember 2026")
+    const groups = new Map<string, Appointment[]>();
+    valid.forEach(a => {
+      const dateStr = new Date(a.appointmentDate).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+      if (!groups.has(dateStr)) groups.set(dateStr, []);
+      groups.get(dateStr)!.push(a);
+    });
+
+    this.groupedDoctorAppointments = Array.from(groups.entries()).map(([label, items]) => ({ label, items }));
   }
 
-  prevPage() {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-    }
-  }
 
-  // --- FILTER LOGIK FÜR DIE KARTEN ---
+  // ==========================================
+  // PATIENT LOGIK (PATIENT VIEW)
+  // ==========================================
+
   applyFilter(filterType: string) {
     this.currentFilter = filterType;
     this.currentPage = 1; 
+    this.updatePatientView();
+  }
+
+  setHistoryView(view: 'UPCOMING' | 'PAST') {
+    this.historyView = view;
+    this.currentPage = 1;
+    this.updatePatientView();
+  }
+
+  updatePatientView() {
     const now = new Date();
+    let valid = this.appointments.filter(a => !(a.patientEmail === a.doctorEmail && a.status === 'CANCELLED'));
 
-    const validAppointments = this.appointments.filter(a => !(a.patientEmail === a.doctorEmail && a.status === 'CANCELLED'));
-
-    if (filterType === 'ALL') {
-      this.filteredAppointments = validAppointments.filter(a => new Date(a.appointmentDate) >= now);
-    } else if (filterType === 'PAST') {
-      this.filteredAppointments = validAppointments.filter(a => new Date(a.appointmentDate) < now);
+    // 1. Nach Historien-Tab filtern
+    if (this.historyView === 'UPCOMING') {
+      valid = valid.filter(a => new Date(a.appointmentDate) >= now);
+      valid.sort((a, b) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime());
     } else {
-      this.filteredAppointments = validAppointments.filter(a => a.status === filterType && new Date(a.appointmentDate) >= now);
+      valid = valid.filter(a => new Date(a.appointmentDate) < now);
+      valid.sort((a, b) => new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime());
     }
+
+    // 2. Nach Summary-Card filtern (wenn nicht ALL)
+    if (this.currentFilter !== 'ALL') {
+      valid = valid.filter(a => a.status === this.currentFilter);
+    }
+
+    this.filteredAppointments = valid;
   }
 
   getCount(filterType: string): number {
     const now = new Date();
-    const validAppointments = this.appointments.filter(a => !(a.patientEmail === a.doctorEmail && a.status === 'CANCELLED'));
+    const valid = this.appointments.filter(a => !(a.patientEmail === a.doctorEmail && a.status === 'CANCELLED'));
 
-    if (filterType === 'ALL') return validAppointments.filter(a => new Date(a.appointmentDate) >= now).length;
-    if (filterType === 'PAST') return validAppointments.filter(a => new Date(a.appointmentDate) < now).length;
-    return validAppointments.filter(a => a.status === filterType && new Date(a.appointmentDate) >= now).length;
+    if (filterType === 'ALL') return valid.filter(a => new Date(a.appointmentDate) >= now).length;
+    if (filterType === 'PAST') return valid.filter(a => new Date(a.appointmentDate) < now).length;
+    return valid.filter(a => a.status === filterType && new Date(a.appointmentDate) >= now).length;
   }
 
-  // NEU: Custom Tailwind Classes für unsere Boutique-Farbpalette!
-  getStatusClasses(status: string): string {
-    switch (status) {
-        case 'CONFIRMED': return 'bg-status-sage/10 text-status-sage border border-status-sage/20'; // Sage Green
-        case 'PENDING': return 'bg-status-ochre/10 text-status-ochre border border-status-ochre/20'; // Warm Ochre
-        case 'CANCELLED': return 'bg-status-brick/10 text-status-brick border border-status-brick/20'; // Brick Red
-        default: return 'bg-gray-100 text-gray-600 border border-gray-200';
-    }
+  // Paginierung Patient
+  get paginatedAppointments(): Appointment[] {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    return this.filteredAppointments.slice(startIndex, startIndex + this.itemsPerPage);
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.filteredAppointments.length / this.itemsPerPage);
+  }
+
+  nextPage() { if (this.currentPage < this.totalPages) this.currentPage++; }
+  prevPage() { if (this.currentPage > 1) this.currentPage--; }
+
+
+  // ==========================================
+  // GEMEINSAME HELPER & UI METHODEN
+  // ==========================================
+
+  getInitial(email: string): string {
+    return email ? email.charAt(0).toUpperCase() : '?';
+  }
+
+  getDayNumber(dateStr: string): string {
+    return new Date(dateStr).getDate().toString().padStart(2, '0');
+  }
+
+  getMonthShort(dateStr: string): string {
+    return new Date(dateStr).toLocaleString('de-DE', { month: 'short' });
+  }
+
+  getStatusLabel(status: string): string {
+    if (status === 'CONFIRMED') return 'Bestätigt';
+    if (status === 'PENDING') return 'Ausstehend';
+    return 'Storniert';
+  }
+
+  getStatusTextClass(appt: Appointment): string {
+    if (appt.patientEmail === appt.doctorEmail) return 'text-status-brick';
+    if (appt.status === 'CONFIRMED') return 'text-status-sage';
+    if (appt.status === 'PENDING') return 'text-status-ochre';
+    return 'text-status-brick';
+  }
+
+  getStatusDotClass(appt: Appointment): string {
+    if (appt.patientEmail === appt.doctorEmail) return 'bg-status-brick';
+    if (appt.status === 'CONFIRMED') return 'bg-status-sage';
+    if (appt.status === 'PENDING') return 'bg-status-ochre';
+    return 'bg-status-brick';
+  }
+
+  isLockedAppt(appt: Appointment): boolean {
+    return appt.status === 'CANCELLED' || appt.patientEmail === appt.doctorEmail;
   }
 
   openStatusDialog(appointment: Appointment) {
@@ -168,24 +273,32 @@ export class DashboardComponent implements OnInit {
     this.showStatusDialog = true; 
   }
 
+  // Quick-Actions aus dem HTML
+  quickConfirm(appt: Appointment) {
+    this.selectedAppointment = appt;
+    this.changeStatus('CONFIRMED');
+  }
+
+  quickCancel(appt: Appointment) {
+    this.selectedAppointment = appt;
+    this.changeStatus('CANCELLED');
+  }
+
   changeStatus(newStatus: string) {
     if (!this.selectedAppointment) return;
 
     this.appointmentService.updateAppointmentStatus(this.selectedAppointment.id, newStatus).subscribe({
       next: () => {
-        this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Status wurde aktualisiert!'});
+        this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Status aktualisiert!'});
         this.showStatusDialog = false; 
         this.loadAppointments(); 
       },
-      error: (err: HttpErrorResponse) => {
+      error: (err: any) => {
         this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Aktion nicht möglich.'});
       }
     });
   }
 
-  
-
-  // --- NAVIGATION & POPUPS ---
   logout() {
     localStorage.removeItem('jwt_token');
     window.location.href = '/login'; 
