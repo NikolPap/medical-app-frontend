@@ -1,10 +1,17 @@
 export interface Appointment {
     id: number;
     doctorEmail: string;
-    doctorName: string; // NEU
-    doctorSpecialty: string; // NEU
+    doctorName: string; 
+    doctorSpecialty: string;
+    doctorAddress?: string; // NEU
+    doctorPhone?: string;   // NEU
+    
     patientEmail: string;
-    patientName: string; // NEU
+    patientName: string; 
+    patientPhone?: string;   // NEU
+    patientGender?: string;  // NEU
+    patientInsurance?: string;// NEU
+    
     appointmentDate: string; 
     status: string;
 }
