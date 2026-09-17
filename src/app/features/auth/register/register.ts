@@ -29,42 +29,62 @@ export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): V
 export class RegisterComponent {
   
   registerForm: FormGroup;
-  currentStep: number = 1; // NEU: Steuert, welches Formular-Stück gezeigt wird!
+  currentStep: number = 1; 
   
   roles = [
     { label: 'Ich bin Patient', value: 'ROLE_PATIENT' },
     { label: 'Ich bin Arzt', value: 'ROLE_DOCTOR' }
   ];
 
+  genderOptions = [
+    { label: 'Männlich', value: 'MALE' },
+    { label: 'Weiblich', value: 'FEMALE' },
+    { label: 'Divers', value: 'DIVERS' }
+  ];
+
+  insuranceOptions = [
+    { label: 'Gesetzlich versichert', value: 'GESETZLICH' },
+    { label: 'Privat versichert', value: 'PRIVATE' }
+  ];
+
+
   constructor(private fb: FormBuilder, private authService: AuthService, private router: Router, private messageService: MessageService) {
-    this.registerForm = this.fb.group({
-      // Schritt 1 Felder
+ this.registerForm = this.fb.group({
       role: ['ROLE_PATIENT', Validators.required],
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
-      specialty: [''], // Nur für Ärzte
-      address: [''],   // Nur für Ärzte
+      phoneNumber: ['', Validators.required], // NEU: Telefon (Für alle Pflicht)
       
-      // Schritt 2 Felder
+      // Nur für Patienten
+      gender: [''], 
+      insuranceType: [''], 
+      
+      // Nur für Ärzte
+      specialty: [''],
+      address: [''],   
+      
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6), Validators.pattern('(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{6,}')]],
       confirmPassword: ['', Validators.required]
     }, { validators: passwordMatchValidator });
   }
 
-  // NEU: Prüft, ob Schritt 1 gültig ausgefüllt ist, bevor man weiter darf
   isStep1Valid(): boolean {
     const isBaseValid = this.registerForm.get('role')?.valid && 
                         this.registerForm.get('firstName')?.valid && 
-                        this.registerForm.get('lastName')?.valid;
+                        this.registerForm.get('lastName')?.valid &&
+                        this.registerForm.get('phoneNumber')?.valid; // NEU
     
-    // Wenn Arzt, müssen auch Specialty und Address ausgefüllt sein (Optional, aber gut für UX)
     if (this.registerForm.get('role')?.value === 'ROLE_DOCTOR') {
       return !!isBaseValid && !!this.registerForm.get('specialty')?.value && !!this.registerForm.get('address')?.value;
+    } 
+    // NEU: Patienten-Check
+    else if (this.registerForm.get('role')?.value === 'ROLE_PATIENT') {
+      return !!isBaseValid && !!this.registerForm.get('gender')?.value && !!this.registerForm.get('insuranceType')?.value;
     }
     return !!isBaseValid;
   }
-
+  
   nextStep() {
     if (this.isStep1Valid()) {
       this.currentStep = 2;
