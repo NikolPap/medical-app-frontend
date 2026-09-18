@@ -59,6 +59,8 @@ export class DashboardComponent implements OnInit {
 
   showStatusDialog: boolean = false;
   selectedAppointment: Appointment | null = null;
+  showCancelConfirm: boolean = false;
+  isSubmitting: boolean = false;
 
   constructor(
     private appointmentService: AppointmentService,
@@ -268,10 +270,70 @@ export class DashboardComponent implements OnInit {
     return appt.status === 'CANCELLED' || appt.patientEmail === appt.doctorEmail;
   }
 
-  openStatusDialog(appointment: Appointment) {
-    this.selectedAppointment = appointment;
-    this.showStatusDialog = true; 
+ openStatusDialog(appointment: Appointment) {
+  this.selectedAppointment = appointment;
+  this.showCancelConfirm = false; // reset κάθε φορά που ανοίγει
+  this.showStatusDialog = true;
+}
+
+requestCancel() { this.showCancelConfirm = true; }
+cancelCancelRequest() { this.showCancelConfirm = false; }
+
+confirmCancelFinal(withBilling: boolean) {
+  this.isSubmitting = true;
+  // TODO: sobald Backend ein "billable"-Flag kennt, hier mitschicken
+  if (withBilling) {
+    this.messageService.add({ severity: 'info', summary: 'Hinweis', detail: 'Termin wird als abzurechnen markiert.' });
   }
+  this.changeStatus('CANCELLED');
+}
+
+changeStatus(newStatus: string) {
+  if (!this.selectedAppointment) return;
+  this.isSubmitting = true;
+  this.appointmentService.updateAppointmentStatus(this.selectedAppointment.id, newStatus).subscribe({
+    next: () => {
+      this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Status aktualisiert!'});
+      this.showStatusDialog = false;
+      this.showCancelConfirm = false;
+      this.isSubmitting = false;
+      this.loadAppointments();
+    },
+    error: (err: any) => {
+      this.isSubmitting = false;
+      this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Aktion nicht möglich.'});
+    }
+  });
+}
+
+  openRescheduleDialog(appt: Appointment) {
+    this.showStatusDialog = false; // Wir schließen zuerst das Info-Popup
+
+    // Wir übergeben dem "Neuer Termin"-Modal die E-Mail des Patienten!
+    this.bookAppointmentModal.patientEmailToReschedule = appt.patientEmail;
+    
+    // Optional: Wir füllen den Arzt schon mal automatisch im Dropdown aus!
+    if (appt.doctorId) {
+      this.bookAppointmentModal.newAppointmentForm.patchValue({ doctorId: appt.doctorId });
+    }
+
+    // Wir öffnen das Buchen-Modal!
+    this.bookAppointmentModal.openDialog();
+  }
+
+getTimelineSteps(appt: Appointment): { label: string, state: 'done' | 'current' | 'future' }[] {
+  const isPast = new Date(appt.appointmentDate) < new Date();
+  return [
+    { label: 'Angefragt', state: 'done' },
+    { label: 'Bestätigt', state: appt.status === 'CONFIRMED' ? 'done' : 'current' },
+    { label: isPast ? 'Abgeschlossen' : 'Termin', state: (isPast && appt.status === 'CONFIRMED') ? 'done' : 'future' }
+  ];
+}
+
+encodeURIComponent(str: string): string {
+  return window.encodeURIComponent(str);
+}
+
 
   // Quick-Actions aus dem HTML
   quickConfirm(appt: Appointment) {
@@ -284,20 +346,6 @@ export class DashboardComponent implements OnInit {
     this.changeStatus('CANCELLED');
   }
 
-  changeStatus(newStatus: string) {
-    if (!this.selectedAppointment) return;
-
-    this.appointmentService.updateAppointmentStatus(this.selectedAppointment.id, newStatus).subscribe({
-      next: () => {
-        this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Status aktualisiert!'});
-        this.showStatusDialog = false; 
-        this.loadAppointments(); 
-      },
-      error: (err: any) => {
-        this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Aktion nicht möglich.'});
-      }
-    });
-  }
 
   logout() {
     localStorage.removeItem('jwt_token');
@@ -311,4 +359,18 @@ export class DashboardComponent implements OnInit {
   openScheduleDialog() {
     this.doctorSettingsModal.openDialog(); 
   }
+
+  getStatusClasses(status: string): string {
+  switch (status) {
+    case 'CONFIRMED':
+      return 'bg-status-sage/15 text-status-sage';
+    case 'PENDING':
+      return 'bg-status-ochre/15 text-status-ochre';
+    case 'CANCELLED':
+      return 'bg-status-brick/15 text-status-brick';
+    default:
+      return 'bg-gray-100 text-gray-500';
+  }
+}
+
 }
