@@ -29,6 +29,8 @@ export class BookAppointmentComponent implements OnInit {
   minDate: Date = new Date();
   availableSlots: string[] = [];
   selectedTimeSlot: string = '';
+  patientEmailToReschedule: string | null = null;
+
 
   constructor(
     private fb: FormBuilder,
@@ -85,17 +87,19 @@ export class BookAppointmentComponent implements OnInit {
     this.newAppointmentForm.patchValue({ appointmentTime: time });
   }
 
-  bookAppointment() {
+ bookAppointment() {
     if (this.newAppointmentForm.invalid) return;
 
     const rawDate = this.newAppointmentForm.value.appointmentDate;
     const dateObj = new Date(rawDate);
     const formattedDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
 
+    // NEU: Wir packen die patientEmail in den Request (Java braucht das, wenn ein Arzt bucht!)
     const requestData = {
       doctorId: this.newAppointmentForm.value.doctorId,
       appointmentDate: formattedDate,
-      appointmentTime: this.newAppointmentForm.value.appointmentTime
+      appointmentTime: this.newAppointmentForm.value.appointmentTime,
+      patientEmail: this.patientEmailToReschedule // <-- HIER IST DIE MAGIE!
     };
 
     this.appointmentService.createAppointment(requestData).subscribe({
@@ -104,7 +108,7 @@ export class BookAppointmentComponent implements OnInit {
         this.showDialog = false;
         this.appointmentBooked.emit(); 
       },
-      error: (err: HttpErrorResponse) => {
+      error: (err: any) => { // Hier eventuell HttpErrorResponse nutzen
         this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Termin konnte nicht gebucht werden.'});
       }
     });
