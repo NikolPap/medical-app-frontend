@@ -12,7 +12,7 @@ export class AuthService {
   constructor(private http: HttpClient) {}
    
   login(loginData: unknown): Observable<ApiResponse>  {
-    return this.http.post<ApiResponse>(`${this.API_URL}/login`, loginData);
+    return this.http.post<ApiResponse>(`${this.API_URL}/login`, loginData, {withCredentials:true});
   }
 
   register(registerData: unknown): Observable<ApiResponse> {
