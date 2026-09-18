@@ -11,10 +11,11 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }), 
     provideRouter(routes), 
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor])
+  ),
     provideHttpClient(), 
     provideAnimationsAsync(),
     MessageService, 
-    ConfirmationService // <-- HIER HINZUGEFÜGT (Macht es GLOBAL)
+    ConfirmationService 
   ]
 };
