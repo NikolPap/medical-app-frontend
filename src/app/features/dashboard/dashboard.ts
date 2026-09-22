@@ -306,18 +306,19 @@ changeStatus(newStatus: string) {
   });
 }
 
-  openRescheduleDialog(appt: Appointment) {
-    this.showStatusDialog = false; // Wir schließen zuerst das Info-Popup
+openRescheduleDialog(appt: Appointment) {
+    this.showStatusDialog = false; 
 
-    // Wir übergeben dem "Neuer Termin"-Modal die E-Mail des Patienten!
+    // Wir übergeben ALLES, was das Modal für ein echtes Verschieben braucht!
     this.bookAppointmentModal.patientEmailToReschedule = appt.patientEmail;
-    
-    // Optional: Wir füllen den Arzt schon mal automatisch im Dropdown aus!
+    this.bookAppointmentModal.oldAppointmentIdToCancel = appt.id; // NEU: Dieses ID wird storniert!
+    this.bookAppointmentModal.userRole = this.userRole; // NEU: Wer verschiebt gerade?
+
+    // Wir wählen den Arzt schon mal im Dropdown aus
     if (appt.doctorId) {
       this.bookAppointmentModal.newAppointmentForm.patchValue({ doctorId: appt.doctorId });
     }
 
-    // Wir öffnen das Buchen-Modal!
     this.bookAppointmentModal.openDialog();
   }
 
@@ -352,7 +353,12 @@ encodeURIComponent(str: string): string {
     window.location.href = '/login'; 
   }
 
-  openNewAppointmentDialog() {
+ openNewAppointmentDialog() {
+    // Wenn es ein komplett NEUER Termin ist, stellen wir sicher, dass kein alter storniert wird!
+    this.bookAppointmentModal.oldAppointmentIdToCancel = null;
+    this.bookAppointmentModal.patientEmailToReschedule = null;
+    this.bookAppointmentModal.userRole = this.userRole;
+    
     this.bookAppointmentModal.openDialog(); 
   }
 
