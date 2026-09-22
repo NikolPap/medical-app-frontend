@@ -5,6 +5,7 @@ import { AppointmentService } from '../../../../core/services/appointment';
 import { ScheduleService } from '../../../../core/services/schedule';
 import { HolidayService } from '../../../../core/services/holiday';
 import { MessageService, ConfirmationService } from 'primeng/api';
+
 import { DoctorSchedule } from '../../../../core/models/appointment.model';
 import { DoctorHoliday } from '../../../../core/models/appointment.model';
 
@@ -20,7 +21,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule, DialogModule, DropdownModule, CalendarModule, ButtonModule, TooltipModule, ConfirmDialogModule],
   providers: [ConfirmationService],
- templateUrl: './doctor-settings.html'
+  templateUrl: './doctor-settings.html'
 })
 export class DoctorSettingsComponent implements OnInit {
 
@@ -29,25 +30,39 @@ export class DoctorSettingsComponent implements OnInit {
   showDialog: boolean = false;
   minDate: Date = new Date();
 
+  // Loading States für die Buttons
+  isSavingDuration: boolean = false;
+  isSavingHoliday: boolean = false;
+  isSavingSchedule: boolean = false;
+
   // Dauer-Settings
   durationOptions = [
     { label: '10 Minuten', value: 10 }, { label: '15 Minuten', value: 15 },
     { label: '20 Minuten', value: 20 }, { label: '30 Minuten', value: 30 },
-    { label: '40 Minuten', value: 40 }, { label: '45 Minuten', value: 45 },
-    { label: '60 Minuten', value: 60 }
+    { label: '45 Minuten', value: 45 }, { label: '60 Minuten', value: 60 }
   ];
   selectedDuration: number = 30;
 
-  // Urlaub-Settings (STRICT TYPED!)
+  // Urlaub-Settings
   blockedDate: Date | Date[] | null = null;
   myHolidays: DoctorHoliday[] = [];
   groupedHolidays: { startDate: string, endDate: string, ids: number[] }[] = [];
 
-  // Schichten-Settings (STRICT TYPED!)
+  // Schichten-Settings
   scheduleForm: FormGroup;
   mySchedule: DoctorSchedule[] = [];
-  groupedSchedule: { dayOfWeek: string, shifts: DoctorSchedule[] }[] = [];
   editingScheduleId: number | null = null;
+
+  // NEU: Die Struktur für das Weekly Grid (MO - SO)
+  weeklyGrid = [
+    { id: 'MONDAY', label: 'MO', shifts: [] as DoctorSchedule[] },
+    { id: 'TUESDAY', label: 'DI', shifts: [] as DoctorSchedule[] },
+    { id: 'WEDNESDAY', label: 'MI', shifts: [] as DoctorSchedule[] },
+    { id: 'THURSDAY', label: 'DO', shifts: [] as DoctorSchedule[] },
+    { id: 'FRIDAY', label: 'FR', shifts: [] as DoctorSchedule[] },
+    { id: 'SATURDAY', label: 'SA', shifts: [] as DoctorSchedule[] },
+    { id: 'SUNDAY', label: 'SO', shifts: [] as DoctorSchedule[] }
+  ];
 
   constructor(
     private fb: FormBuilder,
@@ -74,8 +89,8 @@ export class DoctorSettingsComponent implements OnInit {
     this.showDialog = true;
   }
 
+  // --- DAUER (DURATION) ---
   loadDoctorDuration() {
-    // Hier lassen wir any für die Ärzte-Liste, da diese aus dem AuthController kommt und kein eigenes Modell braucht
     this.appointmentService.getAllDoctors().subscribe({
       next: (docs) => {
         const token = localStorage.getItem('jwt_token');
@@ -91,12 +106,15 @@ export class DoctorSettingsComponent implements OnInit {
   }
 
   saveDuration() {
+    this.isSavingDuration = true;
     this.scheduleService.updateSlotDuration(this.selectedDuration).subscribe({
       next: () => {
         this.messageService.add({severity: 'success', summary: 'Erfolg', detail: `Dauer auf ${this.selectedDuration} Min. geändert!`});
+        this.isSavingDuration = false;
       },
-      error: (err: { error: { error: string } }) => {
+      error: (err: any) => {
         this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Konnte Dauer nicht ändern.'});
+        this.isSavingDuration = false;
       }
     });
   }
@@ -117,8 +135,6 @@ export class DoctorSettingsComponent implements OnInit {
       return;
     }
     const sorted = [...holidays].sort((a, b) => new Date(a.holidayDate).getTime() - new Date(b.holidayDate).getTime());
-    
-    // Typisierung der Gruppen
     const grouped: { startDate: string, endDate: string, ids: number[] }[] = [];
     let currentGroup = { startDate: sorted[0].holidayDate, endDate: sorted[0].holidayDate, ids: [sorted[0].id] };
 
@@ -141,19 +157,13 @@ export class DoctorSettingsComponent implements OnInit {
   }
 
   blockDay() {
-    if (!this.blockedDate) {
-      this.messageService.add({severity: 'warn', summary: 'Achtung', detail: 'Bitte wähle zuerst ein Datum aus!'});
-      return;
-    }
+    if (!this.blockedDate) return;
 
     let startDate: Date;
     let endDate: Date;
 
     if (Array.isArray(this.blockedDate)) {
-      if (!this.blockedDate[0]) {
-        this.messageService.add({severity: 'warn', summary: 'Achtung', detail: 'Bitte wähle zuerst ein Datum aus!'});
-        return;
-      }
+      if (!this.blockedDate[0]) return;
       startDate = this.blockedDate[0];
       endDate = this.blockedDate[1] ? this.blockedDate[1] : this.blockedDate[0]; 
     } else {
@@ -180,28 +190,18 @@ export class DoctorSettingsComponent implements OnInit {
     const startStr = format(startDate);
     const endStr = format(endDate);
 
-    const message = startStr === endStr 
-        ? `Möchtest du den ${startStr} blockieren?` 
-        : `Möchtest du den Zeitraum ${startStr} bis ${endStr} blockieren?`;
-
-    this.confirmationService.confirm({
-      message: message,
-      header: 'Urlaub eintragen',
-      icon: 'pi pi-info-circle',
-      acceptLabel: 'Ja, blockieren',
-      rejectLabel: 'Abbrechen',
-      acceptButtonStyleClass: 'p-button-warning p-2 px-4 rounded-md',
-      rejectButtonStyleClass: 'p-button-text p-2 px-4 rounded-md',
-      accept: () => {
-        this.holidayService.addHolidayRange(startStr, endStr).subscribe({
-          next: () => {
-            this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Urlaub eingetragen!'});
-            this.blockedDate = null; 
-            this.loadMyHolidays(); 
-            this.settingsChanged.emit(); 
-          },
-          error: (err: { error: { error: string } }) => this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Fehler beim Speichern.'})
-        });
+    this.isSavingHoliday = true;
+    this.holidayService.addHolidayRange(startStr, endStr).subscribe({
+      next: () => {
+        this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Urlaub eingetragen!'});
+        this.blockedDate = null; 
+        this.loadMyHolidays(); 
+        this.settingsChanged.emit(); 
+        this.isSavingHoliday = false;
+      },
+      error: (err: any) => {
+        this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Fehler beim Speichern.'});
+        this.isSavingHoliday = false;
       }
     });
   }
@@ -238,24 +238,21 @@ export class DoctorSettingsComponent implements OnInit {
     this.scheduleService.getMySchedule().subscribe({
       next: (data: DoctorSchedule[]) => {
         this.mySchedule = data;
-        const dayOrder: { [key: string]: number } = {
-          'MONDAY': 1, 'TUESDAY': 2, 'WEDNESDAY': 3, 'THURSDAY': 4, 'FRIDAY': 5, 'SATURDAY': 6, 'SUNDAY': 7
-        };
-        const groupedMap = new Map<string, DoctorSchedule[]>();
         
-        data.forEach((s: DoctorSchedule) => {
-          if (!groupedMap.has(s.dayOfWeek)) groupedMap.set(s.dayOfWeek, []);
-          groupedMap.get(s.dayOfWeek)?.push(s);
+        // Weekly Grid leeren und neu füllen
+        this.weeklyGrid.forEach(day => day.shifts = []);
+        
+        data.forEach(shift => {
+          const dayConfig = this.weeklyGrid.find(d => d.id === shift.dayOfWeek);
+          if (dayConfig) {
+            dayConfig.shifts.push(shift);
+          }
         });
-        
-        this.groupedSchedule = Array.from(groupedMap.entries()).map(([day, shifts]) => {
-          shifts.sort((a: DoctorSchedule, b: DoctorSchedule) => {
-            const timeA = a?.startTime || '';
-            const timeB = b?.startTime || '';
-            return timeA.localeCompare(timeB);
-          });
-          return { dayOfWeek: day, shifts: shifts };
-        }).sort((a, b) => dayOrder[a.dayOfWeek] - dayOrder[b.dayOfWeek]);
+
+        // Schichten innerhalb eines Tages nach Startzeit sortieren
+        this.weeklyGrid.forEach(day => {
+          day.shifts.sort((a, b) => a.startTime.localeCompare(b.startTime));
+        });
       },
       error: (err) => console.error("Fehler beim Laden des Plans", err)
     });
@@ -263,16 +260,41 @@ export class DoctorSettingsComponent implements OnInit {
 
   saveSchedule() {
     if (this.scheduleForm.invalid) return;
-    const requestData = {
-      dayOfWeek: this.scheduleForm.value.dayOfWeek,
-      startTime: this.scheduleForm.value.startTime, 
-      endTime: this.scheduleForm.value.endTime
-    };
+
+    let start = this.scheduleForm.value.startTime; 
+    let end = this.scheduleForm.value.endTime;
+    const dayOfWeek = this.scheduleForm.value.dayOfWeek;
+
+    // Falls es ein Date-Objekt ist (vom PrimeNG Calendar), extrahieren wir "HH:mm"
+    if (typeof start !== 'string') {
+      start = start.toTimeString().split(' ')[0].substring(0, 5);
+      end = end.toTimeString().split(' ')[0].substring(0, 5);
+    }
+
+    // 1. VALIDIERUNG: Endzeit muss nach Startzeit liegen!
+    if (start >= end) {
+      this.messageService.add({severity: 'error', summary: 'Logikfehler', detail: 'Die Startzeit muss VOR der Endzeit liegen.'});
+      return;
+    }
+
+    // 2. VALIDIERUNG: Überschneidungs-Check (Overlap)
+    const existingShifts = this.mySchedule.filter(s => s.dayOfWeek === dayOfWeek && s.id !== this.editingScheduleId);
+    for (let s of existingShifts) {
+      const sStart = s.startTime.substring(0, 5);
+      const sEnd = s.endTime.substring(0, 5);
+      // Wenn Startzeit vor Ende der anderen UND Endzeit nach Start der anderen liegt -> OVERLAP!
+      if (start < sEnd && end > sStart) {
+        this.messageService.add({severity: 'error', summary: 'Überschneidung', detail: 'Diese Schicht überschneidet sich mit einer bestehenden!'});
+        return;
+      }
+    }
+
+    const requestData = { dayOfWeek, startTime: start, endTime: end };
+    this.isSavingSchedule = true;
 
     if (this.editingScheduleId !== null) {
       this.scheduleService.deleteSchedule(this.editingScheduleId).subscribe({
         next: () => {
-          this.editingScheduleId = null;
           this.sendSaveRequest(requestData);
         }
       });
@@ -281,25 +303,35 @@ export class DoctorSettingsComponent implements OnInit {
     }
   }
 
-  private sendSaveRequest(requestData: { dayOfWeek: string, startTime: string, endTime: string }) {
+  private sendSaveRequest(requestData: any) {
     this.scheduleService.saveSchedule(requestData).subscribe({
       next: () => {
         this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Arbeitszeit gespeichert!'});
-        this.scheduleForm.reset();
+        this.cancelEdit(); // Reset Formular & Edit Mode
         this.loadMySchedule(); 
+        this.isSavingSchedule = false;
       },
-      error: (err: { error: { error: string } }) => this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Fehler beim Speichern.'})
+      error: (err: any) => {
+        this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Fehler beim Speichern.'});
+        this.isSavingSchedule = false;
+      }
     });
   }
 
   editSchedule(schedule: DoctorSchedule) {
     this.editingScheduleId = schedule.id; 
+    
     this.scheduleForm.patchValue({
       dayOfWeek: schedule.dayOfWeek,
       startTime: schedule.startTime.substring(0, 5), 
       endTime: schedule.endTime.substring(0, 5)
     });
-    this.messageService.add({severity: 'info', summary: 'Bearbeiten', detail: 'Bitte ändern und speichern!'});
+  }
+
+  // NEU: Bearbeiten abbrechen
+  cancelEdit() {
+    this.editingScheduleId = null;
+    this.scheduleForm.reset();
   }
 
   deleteSchedule(scheduleId: number) {
@@ -320,5 +352,10 @@ export class DoctorSettingsComponent implements OnInit {
         });
       }
     });
+  }
+
+  // Dummy-Methode für dein UI "Kopieren" Button
+  copyToOtherDays() {
+    this.messageService.add({severity: 'info', summary: 'Hinweis', detail: 'Feature folgt in Kürze!'});
   }
 }
