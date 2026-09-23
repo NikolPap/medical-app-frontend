@@ -1,0 +1,174 @@
+<p-dialog header="Termindetails" [modal]="true" [(visible)]="visible" (onHide)="onHide()"
+          [style]="{width: '90vw', maxWidth: '32rem'}"
+          [contentStyle]="{'max-height': '65vh', 'overflow-y': 'auto'}"
+          styleClass="rounded-3xl shadow-2xl font-sans overflow-hidden">
+
+  <div class="flex flex-col gap-6 p-2" *ngIf="appointment">
+
+    <div class="-mx-6 -mt-6 h-1.5" [ngClass]="appointment | statusDotClass"></div>
+
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+      <div>
+        <p class="text-sm text-gray-500 font-medium">Wann?</p>
+        <p class="font-bold text-ink-teal text-base sm:text-lg"><i class="pi pi-calendar mr-2 text-warm-brass"></i>{{ appointment.appointmentDate | date:'dd.MM.yyyy - HH:mm' }} Uhr</p>
+      </div>
+      <div class="sm:text-right">
+        <p class="text-sm text-gray-500 font-medium mb-1">Status</p>
+        <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" [class]="appointment.status | statusBadgeClass">
+          {{ appointment | statusLabel }}
+        </span>
+      </div>
+    </div>
+
+    <div *ngIf="appointment.status !== 'CANCELLED' && appointment.patientEmail !== appointment.doctorEmail && !showCancelConfirm"
+         class="flex items-center px-2 overflow-x-auto">
+      <ng-container *ngFor="let step of getTimelineSteps(appointment); let last = last">
+        <div class="flex flex-col items-center gap-1.5" style="min-width: 60px;">
+          <div class="w-6 h-6 rounded-full flex items-center justify-center border-2 transition-colors"
+               [ngClass]="step.state === 'done' ? 'bg-status-sage border-status-sage text-white' : step.state === 'current' ? 'bg-white border-warm-brass text-warm-brass' : 'bg-white border-gray-200 text-gray-300'">
+            <i *ngIf="step.state === 'done'" class="pi pi-check text-[10px]"></i>
+            <span *ngIf="step.state !== 'done'" class="w-1.5 h-1.5 rounded-full" [ngClass]="step.state === 'current' ? 'bg-warm-brass' : 'bg-gray-200'"></span>
+          </div>
+          <span class="text-[10px] font-medium text-center" [ngClass]="step.state === 'future' ? 'text-gray-300' : 'text-gray-600'">{{ step.label }}</span>
+        </div>
+        <div *ngIf="!last" class="flex-1 h-0.5 -mt-4" [ngClass]="step.state === 'done' ? 'bg-status-sage' : 'bg-gray-200'"></div>
+      </ng-container>
+    </div>
+
+    <ng-container *ngIf="!showCancelConfirm">
+
+      <ng-container *ngIf="userRole === 'ROLE_DOCTOR' && appointment.patientEmail !== appointment.doctorEmail">
+        <div class="flex flex-col gap-3">
+          <h3 class="font-serif font-bold text-ink-teal text-lg sm:text-xl border-b border-gray-100 pb-2">Patientenakte</h3>
+
+          <div class="flex items-center gap-4">
+            <p-avatar [label]="appointment.patientName | initial" size="large" shape="circle" styleClass="bg-blue-50 text-ink-teal font-bold"></p-avatar>
+            <div class="min-w-0">
+              <p class="font-bold text-gray-800 text-base sm:text-lg">{{ appointment.patientName }}</p>
+              <a [href]="'mailto:' + appointment.patientEmail" class="text-xs sm:text-sm text-gray-500 hover:text-ink-teal transition-colors break-all">
+                <i class="pi pi-envelope mr-1"></i> {{ appointment.patientEmail }}
+              </a>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100 mt-2">
+            <div>
+              <p class="text-xs text-gray-500">Telefon</p>
+              <a *ngIf="appointment.patientPhone; else noPhone" [href]="'tel:' + appointment.patientPhone" class="font-medium text-ink-teal hover:underline">{{ appointment.patientPhone }}</a>
+              <ng-template #noPhone><p class="font-medium text-gray-800">Nicht angegeben</p></ng-template>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">Versicherung</p>
+              <p class="font-medium text-gray-800 capitalize">{{ appointment.patientInsurance?.toLowerCase() || '-' }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">Geschlecht</p>
+              <p class="font-medium text-gray-800 capitalize">{{ appointment.patientGender?.toLowerCase() || '-' }}</p>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="userRole === 'ROLE_PATIENT'">
+        <div class="flex flex-col gap-3">
+          <h3 class="font-serif font-bold text-ink-teal text-lg sm:text-xl border-b border-gray-100 pb-2">Arzt Details</h3>
+
+          <div class="flex items-center gap-4">
+            <p-avatar [label]="appointment.doctorName | initial" size="large" shape="circle" styleClass="bg-orange-50 text-ink-teal font-bold"></p-avatar>
+            <div>
+              <p class="font-bold text-gray-800 text-base sm:text-lg">Dr. {{ appointment.doctorName }}</p>
+              <p class="text-xs sm:text-sm text-gray-500">{{ appointment.doctorSpecialty || 'Allgemeinmedizin' }}</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100 mt-2">
+            <div>
+              <p class="text-xs text-gray-500">Praxis-Adresse</p>
+              <p class="font-medium text-gray-800 text-sm"><i class="pi pi-map-marker text-warm-brass mr-1"></i> {{ appointment.doctorAddress || 'Nicht angegeben' }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">Telefon</p>
+              <a *ngIf="appointment.doctorPhone; else noDocPhone" [href]="'tel:' + appointment.doctorPhone" class="font-medium text-ink-teal hover:underline text-sm"><i class="pi pi-phone text-warm-brass mr-1"></i>{{ appointment.doctorPhone }}</a>
+              <ng-template #noDocPhone><p class="font-medium text-gray-800 text-sm"><i class="pi pi-phone text-warm-brass mr-1"></i>Nicht angegeben</p></ng-template>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="userRole === 'ROLE_DOCTOR' && appointment.patientEmail === appointment.doctorEmail && appointment.status !== 'CANCELLED'">
+        <div class="bg-red-50 p-4 rounded-xl border border-red-100 text-center mt-2">
+          <h3 class="font-bold text-status-brick text-base sm:text-lg mb-2">Blockierter Tag (Urlaub)</h3>
+          <p class="text-xs sm:text-sm text-status-brick/80 mb-4">Wenn du diesen Tag stornierst, können Patienten wieder Termine buchen.</p>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="appointment.status === 'CANCELLED'">
+        <div class="bg-red-50 p-4 rounded-xl border border-red-100 text-center mt-4">
+          <i class="pi pi-info-circle text-status-brick text-2xl mb-2"></i>
+          <p class="text-status-brick font-medium text-sm">Dieser Termin wurde storniert und kann nicht mehr geändert werden.</p>
+        </div>
+      </ng-container>
+
+    </ng-container>
+
+    <div *ngIf="showCancelConfirm" class="bg-status-brick/5 border border-status-brick/20 p-5 rounded-xl">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-9 h-9 rounded-full bg-status-brick/10 text-status-brick flex items-center justify-center flex-shrink-0">
+          <i class="pi pi-exclamation-triangle"></i>
+        </div>
+        <p class="text-sm font-bold text-status-brick">
+          {{ appointment.patientEmail === appointment.doctorEmail ? 'Urlaub wirklich stornieren?' : 'Termin wirklich stornieren?' }}
+        </p>
+      </div>
+      <p class="text-xs text-gray-500 mb-4 pl-12">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+      <div class="flex flex-col gap-2">
+        <p-button label="Ja, stornieren" [loading]="isSubmitting" [disabled]="isSubmitting"
+                  styleClass="w-full p-2.5 rounded-xl font-bold bg-status-brick border-none hover:bg-status-brick/90 text-white text-sm"
+                  (onClick)="confirmCancelFinal.emit()"></p-button>
+        <p-button label="Zurück" [text]="true" [disabled]="isSubmitting"
+                  styleClass="w-full p-2.5 rounded-xl font-medium text-gray-500 text-sm"
+                  (onClick)="cancelCancelRequest.emit()"></p-button>
+      </div>
+    </div>
+
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div *ngIf="appointment && appointment.status !== 'CANCELLED' && !showCancelConfirm" class="flex flex-col gap-2 pt-2 w-full">
+
+      <ng-container *ngIf="userRole === 'ROLE_DOCTOR' && appointment.patientEmail === appointment.doctorEmail">
+        <p-button label="Urlaub stornieren (Tag freigeben)" icon="pi pi-unlock"
+                  styleClass="w-full p-3 rounded-xl font-bold bg-status-brick border-none hover:bg-status-brick/90 text-white shadow-sm"
+                  (onClick)="requestCancel.emit()"></p-button>
+      </ng-container>
+
+      <ng-container *ngIf="userRole === 'ROLE_DOCTOR' && appointment.patientEmail !== appointment.doctorEmail">
+        <p-button *ngIf="appointment.status !== 'CONFIRMED'" label="Termin bestätigen" icon="pi pi-check"
+                  [loading]="isSubmitting" [disabled]="isSubmitting"
+                  styleClass="w-full p-3 rounded-xl font-bold bg-status-sage border-none hover:bg-status-sage/90 text-white shadow-sm"
+                  (onClick)="confirmStatus.emit()"></p-button>
+        <div class="flex flex-col sm:flex-row gap-2 w-full">
+          <p-button label="Verschieben" icon="pi pi-calendar" [text]="true"
+                    styleClass="w-full p-2.5 rounded-xl font-semibold text-ink-teal border border-gray-200 hover:bg-cool-paper"
+                    (onClick)="reschedule.emit(appointment)"></p-button>
+          <p-button label="Stornieren" icon="pi pi-times" [text]="true"
+                    styleClass="w-full p-2.5 rounded-xl font-semibold text-status-brick border border-gray-200 hover:bg-status-brick/5"
+                    (onClick)="requestCancel.emit()"></p-button>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="userRole === 'ROLE_PATIENT'">
+        <div class="flex flex-col sm:flex-row gap-2 w-full">
+          <p-button label="Verschieben" icon="pi pi-calendar" [text]="true"
+                    styleClass="w-full p-2.5 rounded-xl font-semibold text-ink-teal border border-gray-200 hover:bg-cool-paper"
+                    (onClick)="reschedule.emit(appointment)"></p-button>
+          <p-button label="Stornieren" icon="pi pi-times" [text]="true"
+                    styleClass="w-full p-2.5 rounded-xl font-semibold text-status-brick border border-gray-200 hover:bg-status-brick/5"
+                    (onClick)="requestCancel.emit()"></p-button>
+        </div>
+        <p class="text-[11px] text-center text-gray-400 mt-2">Eine Stornierung ist nur bis 48 Stunden vor dem Termin möglich.</p>
+      </ng-container>
+    </div>
+  </ng-template>
+
+</p-dialog>
