@@ -266,9 +266,15 @@ export class DashboardComponent implements OnInit {
     return 'bg-status-brick';
   }
 
-  isLockedAppt(appt: Appointment): boolean {
-    return appt.status === 'CANCELLED' || appt.patientEmail === appt.doctorEmail;
-  }
+// ΝΕΟ: μόνο οι μπλοκαρισμένες μέρες (urlaub) είναι πραγματικά "κλειδωμένες"
+isBlockedDay(appt: Appointment): boolean {
+  return appt.patientEmail === appt.doctorEmail;
+}
+
+// Το παλιό isLockedAppt μένει μόνο για τις μπλοκαρισμένες μέρες πλέον
+isLockedAppt(appt: Appointment): boolean {
+  return this.isBlockedDay(appt);
+}
 
  openStatusDialog(appointment: Appointment) {
   this.selectedAppointment = appointment;
