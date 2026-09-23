@@ -1,0 +1,47 @@
+<div class="flex-1 min-h-0 bg-white rounded-3xl shadow-sm border border-gray-100 p-4 sm:p-8 flex flex-col">
+  <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6 border-b border-gray-100 pb-4 sm:pb-6 flex-shrink-0">
+    <div>
+      <h3 class="font-serif font-bold text-ink-teal text-lg sm:text-2xl">Alle Termine</h3>
+      <p class="text-xs sm:text-sm text-gray-500 mt-1">Übersicht deiner anstehenden Patienten</p>
+    </div>
+    <div class="flex items-center gap-3 font-medium text-ink-teal bg-cool-paper px-4 py-2 rounded-full border border-gray-200 self-start sm:self-auto">
+      <p-avatar [label]="userEmail | initial" shape="circle" styleClass="bg-ink-teal text-white"></p-avatar>
+      <span class="text-sm">Dr. {{ userEmail.split('@')[0] | titlecase }}</span>
+    </div>
+  </div>
+
+  <div class="flex gap-2 mb-4 sm:mb-6 flex-shrink-0 overflow-x-auto">
+    <button (click)="viewChange.emit('CURRENT')" class="text-xs font-semibold px-4 py-2 rounded-full transition-colors whitespace-nowrap" [ngClass]="doctorView === 'CURRENT' ? 'bg-ink-teal text-white' : 'bg-cool-paper text-gray-500 hover:bg-gray-100'">Aktuell</button>
+    <button (click)="viewChange.emit('PAST')" class="text-xs font-semibold px-4 py-2 rounded-full transition-colors whitespace-nowrap" [ngClass]="doctorView === 'PAST' ? 'bg-ink-teal text-white' : 'bg-cool-paper text-gray-500 hover:bg-gray-100'">Vergangen</button>
+    <button (click)="viewChange.emit('CANCELLED')" class="text-xs font-semibold px-4 py-2 rounded-full transition-colors whitespace-nowrap" [ngClass]="doctorView === 'CANCELLED' ? 'bg-ink-teal text-white' : 'bg-cool-paper text-gray-500 hover:bg-gray-100'">Storniert</button>
+  </div>
+
+  <div *ngIf="pendingCount > 0 && currentFilter !== 'PENDING'" class="mb-6 bg-orange-50 border border-orange-200 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm flex-shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-status-ochre/20 text-status-ochre flex items-center justify-center text-lg sm:text-xl flex-shrink-0"><i class="pi pi-bell"></i></div>
+      <div>
+        <p class="font-bold text-orange-900 text-sm sm:text-base">Aktion erforderlich!</p>
+        <p class="text-xs sm:text-sm text-orange-800">Du hast <strong>{{ pendingCount }}</strong> Terminanfragen, die auf Bestätigung warten.</p>
+      </div>
+    </div>
+    <p-button label="Jetzt ansehen" icon="pi pi-arrow-right" iconPos="right" [text]="true" styleClass="text-status-ochre font-bold hover:bg-orange-100 self-start sm:self-auto" (onClick)="showPendingOnly.emit()"></p-button>
+  </div>
+
+  <div class="mb-4 flex justify-end flex-shrink-0" *ngIf="currentFilter === 'PENDING'">
+    <p-button label="Filter zurücksetzen" icon="pi pi-times" [text]="true" size="small" (onClick)="resetFilter.emit()" styleClass="text-gray-500 hover:text-ink-teal"></p-button>
+  </div>
+
+  <div class="flex-1 min-h-0 overflow-y-auto pr-1 sm:pr-4 flex flex-col gap-6">
+    <div *ngIf="groups.length === 0" class="text-center p-8 text-gray-400 italic">Keine Termine gefunden.</div>
+
+    <div *ngFor="let group of groups" class="flex flex-col gap-3">
+      <p class="text-xs font-bold uppercase tracking-wider text-gray-400 pl-1">{{ group.label }}</p>
+
+      <app-appointment-row *ngFor="let appt of group.items" [appt]="appt" mode="full"
+                            (rowClick)="rowClick.emit($event)"
+                            (confirm)="confirm.emit($event)"
+                            (cancel)="cancel.emit($event)">
+      </app-appointment-row>
+    </div>
+  </div>
+</div>
