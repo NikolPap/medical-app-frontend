@@ -1,5 +1,5 @@
 <div class="min-h-screen flex flex-col md:flex-row bg-cool-paper font-sans">
-  
+
   <!-- LINKE SEITE (Brand) -->
   <div class="md:w-5/12 bg-ink-teal text-white flex flex-col justify-between p-8 md:p-16 shadow-2xl z-10">
     <div class="flex items-center gap-3">
@@ -16,123 +16,151 @@
       <p class="text-lg text-gray-300 font-light">Dein Account in nur wenigen Sekunden.</p>
     </div>
 
-    <div class="hidden md:flex gap-2 mt-auto">
-      <div class="w-8 h-1 rounded-full transition-all duration-300" [ngClass]="currentStep === 1 ? 'bg-warm-brass' : 'bg-gray-600'"></div>
-      <div class="w-16 h-1 rounded-full transition-all duration-300" [ngClass]="currentStep === 2 ? 'bg-warm-brass' : 'bg-gray-600'"></div>
+    <!-- Mini-Progress im Brand-Panel, synchron zum Hauptindikator -->
+    <div class="hidden md:flex items-center gap-2 mt-auto">
+      <div class="w-8 h-1 rounded-full transition-colors duration-300" [ngClass]="currentStep >= 1 ? 'bg-warm-brass' : 'bg-gray-600'"></div>
+      <div class="w-8 h-1 rounded-full transition-colors duration-300" [ngClass]="currentStep >= 2 ? 'bg-warm-brass' : 'bg-gray-600'"></div>
     </div>
   </div>
 
 
   <!-- RECHTE SEITE (Formular) -->
-  <div class="flex-1 flex items-center justify-center p-8 md:p-16 relative overflow-y-auto">
+  <div class="flex-1 flex items-center justify-center p-8 md:p-16 relative overflow-hidden">
     <div class="w-full max-w-md">
-      
-      <!-- Progress Indicator -->
-      <div class="flex items-center justify-between mb-8">
-        <span class="text-sm font-bold text-ink-teal bg-ink-teal/10 px-3 py-1 rounded-full">
-          Schritt {{ currentStep }} von 2
-        </span>
-        <button *ngIf="currentStep === 2" (click)="prevStep()" type="button" class="text-sm font-medium text-gray-500 hover:text-ink-teal transition-colors">
-          <i class="pi pi-arrow-left text-xs mr-1"></i> Zurück
-        </button>
-      </div>
 
-      <div class="mb-10">
-        <h2 class="font-serif text-4xl text-ink-teal font-semibold mb-2">Account erstellen</h2>
-        <p class="text-gray-500" *ngIf="currentStep === 1">Lass uns zuerst ein paar Grunddaten erfassen.</p>
-        <p class="text-gray-500" *ngIf="currentStep === 2">Richte nun deine Zugangsdaten ein.</p>
-      </div>
-
-      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-6">
-        
-        <!-- ======================================= -->
-        <!-- SCHRITT 1: Rolle & Persönliche Daten -->
-        <!-- ======================================= -->
-        <ng-container *ngIf="currentStep === 1">
-          
-          <div class="flex flex-col gap-2">
-            <label class="font-medium text-ink-teal">Ich bin...</label>
-            <p-dropdown [options]="roles" formControlName="role" optionLabel="label" optionValue="value" styleClass="w-full rounded-xl border-gray-200" inputStyleClass="p-4"></p-dropdown>
+      <!-- NEUER PROGRESS-INDICATOR: Kreise + Verbindungslinie -->
+      <div class="flex items-center gap-3 mb-10">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 flex-shrink-0"
+               [ngClass]="currentStep >= 1 ? 'bg-warm-brass text-ink-teal' : 'bg-gray-100 text-gray-400'">
+            <i *ngIf="currentStep > 1" class="pi pi-check text-[10px]"></i>
+            <span *ngIf="currentStep === 1">1</span>
           </div>
-
-          <div class="flex gap-4">
-            <div class="flex flex-col gap-2 w-full">
-              <label for="firstName" class="font-medium text-ink-teal">Vorname</label>
-              <input pInputText id="firstName" formControlName="firstName" type="text" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm" />
-            </div>
-            <div class="flex flex-col gap-2 w-full">
-              <label for="lastName" class="font-medium text-ink-teal">Nachname</label>
-              <input pInputText id="lastName" formControlName="lastName" type="text" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm" />
-            </div>
-          </div>
-<!-- Gemeinsames Feld: Telefonnummer -->
-          <div class="flex flex-col gap-2">
-            <label for="phoneNumber" class="font-medium text-ink-teal">Telefonnummer</label>
-            <input pInputText id="phoneNumber" formControlName="phoneNumber" type="tel" placeholder="+49 123 456789" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none shadow-sm" />
-          </div>
-
-          <!-- Spezifische Felder NUR für PATIENTEN -->
-          <ng-container *ngIf="registerForm.get('role')?.value === 'ROLE_PATIENT'">
-            <div class="flex flex-col gap-2">
-              <label class="font-medium text-ink-teal">Geschlecht</label>
-              <p-dropdown [options]="genderOptions" formControlName="gender" placeholder="Bitte wählen" optionLabel="label" optionValue="value" styleClass="w-full rounded-xl border-gray-200" inputStyleClass="p-4"></p-dropdown>
-            </div>
-            <div class="flex flex-col gap-2">
-              <label class="font-medium text-ink-teal">Versicherungsart</label>
-              <p-dropdown [options]="insuranceOptions" formControlName="insuranceType" placeholder="Bitte wählen" optionLabel="label" optionValue="value" styleClass="w-full rounded-xl border-gray-200" inputStyleClass="p-4"></p-dropdown>
-            </div>
-          </ng-container>
-
-          <!-- Spezifische Felder NUR für ÄRZTE -->
-          <ng-container *ngIf="registerForm.get('role')?.value === 'ROLE_DOCTOR'">
-            <div class="flex flex-col gap-2">
-              <label for="specialty" class="font-medium text-ink-teal">Fachrichtung</label>
-              <input pInputText id="specialty" formControlName="specialty" type="text" placeholder="z.B. Kardiologe, Zahnarzt..." class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none shadow-sm" />
-            </div>
-            <div class="flex flex-col gap-2">
-              <label for="address" class="font-medium text-ink-teal">Praxis-Adresse</label>
-              <input pInputText id="address" formControlName="address" type="text" placeholder="Straße, PLZ, Ort" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none shadow-sm" />
-            </div>
-          </ng-container>
-          <p-button type="button" label="Weiter" icon="pi pi-arrow-right" iconPos="right" [disabled]="!isStep1Valid()" (onClick)="nextStep()" styleClass="w-full mt-4 p-4 rounded-xl font-bold text-lg text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all shadow-md"></p-button>
-
-        </ng-container>
-
-
-        <!-- ======================================= -->
-        <!-- SCHRITT 2: Login-Daten (E-Mail & Passwort) -->
-        <!-- ======================================= -->
-        <ng-container *ngIf="currentStep === 2">
-          
-          <div class="flex flex-col gap-2">
-            <label for="email" class="font-medium text-ink-teal">E-Mail Adresse</label>
-            <input pInputText id="email" formControlName="email" type="email" placeholder="max@muster.de" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none shadow-sm" />
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <label for="password" class="font-medium text-ink-teal">Passwort</label>
-            <p-password id="password" formControlName="password" placeholder="••••••••" [toggleMask]="true" [feedback]="true" promptLabel="Bitte Passwort eingeben" weakLabel="Schwach" mediumLabel="Mittel" strongLabel="Stark" styleClass="w-full" inputStyleClass="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none transition-all shadow-sm"></p-password>
-            <small *ngIf="registerForm.get('password')?.errors?.['pattern'] && registerForm.get('password')?.touched" class="text-status-brick font-bold">Muss mind. 1 Großbuchstaben, 1 Kleinbuchstaben & 1 Zahl enthalten.</small>
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <label for="confirmPassword" class="font-medium text-ink-teal">Passwort wiederholen</label>
-            <p-password id="confirmPassword" formControlName="confirmPassword" placeholder="••••••••" [toggleMask]="true" [feedback]="false" styleClass="w-full" inputStyleClass="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none transition-all shadow-sm"></p-password>
-            <small *ngIf="registerForm.errors?.['passwordMismatch'] && registerForm.get('confirmPassword')?.touched" class="text-status-brick font-bold">Die Passwörter stimmen nicht überein!</small>
-          </div>
-
-          <p-button type="submit" label="Registrieren" icon="pi pi-check" [disabled]="registerForm.invalid" styleClass="w-full mt-4 p-4 rounded-xl font-bold text-lg text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all shadow-md flex justify-center items-center gap-2"></p-button>
-
-        </ng-container>
-
-
-        <!-- Links -->
-        <div class="text-center text-sm mt-4">
-          <span class="text-gray-600">Hast du schon einen Account? </span>
-          <a routerLink="/login" class="font-medium text-warm-brass hover:text-warm-brass-dark transition-colors">Hier einloggen</a>
+          <span class="text-xs font-semibold hidden sm:block transition-colors duration-300" [ngClass]="currentStep === 1 ? 'text-ink-teal' : 'text-gray-400'">Grunddaten</span>
         </div>
 
-      </form>
+        <div class="flex-1 h-0.5 rounded-full bg-gray-200 relative overflow-hidden">
+          <div class="absolute inset-y-0 left-0 bg-warm-brass rounded-full transition-all duration-500 ease-in-out"
+               [style.width]="currentStep === 2 ? '100%' : '0%'"></div>
+        </div>
+
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 flex-shrink-0"
+               [ngClass]="currentStep === 2 ? 'bg-warm-brass text-ink-teal' : 'bg-gray-100 text-gray-400'">
+            2
+          </div>
+          <span class="text-xs font-semibold hidden sm:block transition-colors duration-300" [ngClass]="currentStep === 2 ? 'text-ink-teal' : 'text-gray-400'">Zugangsdaten</span>
+        </div>
+      </div>
+
+      <!-- SLIDING CAROUSEL: beide Schritte nebeneinander, width 200%, per translateX animiert -->
+      <div class="overflow-hidden">
+        <div class="flex transition-transform duration-400 ease-in-out"
+             [style.width.%]="200"
+             [style.transform]="currentStep === 1 ? 'translateX(0%)' : 'translateX(-50%)'">
+
+          <!-- ======================================= -->
+          <!-- SCHRITT 1 -->
+          <!-- ======================================= -->
+          <div class="w-1/2 pr-3 flex-shrink-0">
+            <div class="mb-8">
+              <h2 class="font-serif text-4xl text-ink-teal font-semibold mb-2">Account erstellen</h2>
+              <p class="text-gray-500">Lass uns zuerst ein paar Grunddaten erfassen.</p>
+            </div>
+
+            <form [formGroup]="registerForm" class="flex flex-col gap-6">
+              <div class="flex flex-col gap-2">
+                <label class="font-medium text-ink-teal">Ich bin...</label>
+                <p-dropdown [options]="roles" formControlName="role" optionLabel="label" optionValue="value" styleClass="w-full rounded-xl border-gray-200" inputStyleClass="p-4"></p-dropdown>
+              </div>
+
+              <div class="flex gap-4">
+                <div class="flex flex-col gap-2 w-full">
+                  <label for="firstName" class="font-medium text-ink-teal">Vorname</label>
+                  <input pInputText id="firstName" formControlName="firstName" type="text" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm" />
+                </div>
+                <div class="flex flex-col gap-2 w-full">
+                  <label for="lastName" class="font-medium text-ink-teal">Nachname</label>
+                  <input pInputText id="lastName" formControlName="lastName" type="text" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm" />
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <label for="phoneNumber" class="font-medium text-ink-teal">Telefonnummer</label>
+                <input pInputText id="phoneNumber" formControlName="phoneNumber" type="tel" placeholder="+49 123 456789" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none shadow-sm" />
+              </div>
+
+              <ng-container *ngIf="registerForm.get('role')?.value === 'ROLE_PATIENT'">
+                <div class="flex flex-col gap-2">
+                  <label class="font-medium text-ink-teal">Geschlecht</label>
+                  <p-dropdown [options]="genderOptions" formControlName="gender" placeholder="Bitte wählen" optionLabel="label" optionValue="value" styleClass="w-full rounded-xl border-gray-200" inputStyleClass="p-4"></p-dropdown>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <label class="font-medium text-ink-teal">Versicherungsart</label>
+                  <p-dropdown [options]="insuranceOptions" formControlName="insuranceType" placeholder="Bitte wählen" optionLabel="label" optionValue="value" styleClass="w-full rounded-xl border-gray-200" inputStyleClass="p-4"></p-dropdown>
+                </div>
+              </ng-container>
+
+              <ng-container *ngIf="registerForm.get('role')?.value === 'ROLE_DOCTOR'">
+                <div class="flex flex-col gap-2">
+                  <label for="specialty" class="font-medium text-ink-teal">Fachrichtung</label>
+                  <input pInputText id="specialty" formControlName="specialty" type="text" placeholder="z.B. Kardiologe, Zahnarzt..." class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none shadow-sm" />
+                </div>
+                <div class="flex flex-col gap-2">
+                  <label for="address" class="font-medium text-ink-teal">Praxis-Adresse</label>
+                  <input pInputText id="address" formControlName="address" type="text" placeholder="Straße, PLZ, Ort" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none shadow-sm" />
+                </div>
+              </ng-container>
+
+              <p-button type="button" label="Weiter" icon="pi pi-arrow-right" iconPos="right" [disabled]="!isStep1Valid()" (onClick)="nextStep()" styleClass="w-full mt-4 p-4 rounded-xl font-bold text-lg text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all shadow-md"></p-button>
+            </form>
+          </div>
+
+          <!-- ======================================= -->
+          <!-- SCHRITT 2 -->
+          <!-- ======================================= -->
+          <div class="w-1/2 pl-3 flex-shrink-0">
+            <div class="mb-8 flex items-start justify-between">
+              <div>
+                <h2 class="font-serif text-4xl text-ink-teal font-semibold mb-2">Zugangsdaten</h2>
+                <p class="text-gray-500">Richte nun deine Zugangsdaten ein.</p>
+              </div>
+              <button (click)="prevStep()" type="button" class="text-sm font-medium text-gray-500 hover:text-ink-teal transition-colors flex items-center gap-1 mt-2 flex-shrink-0">
+                <i class="pi pi-arrow-left text-xs"></i> Zurück
+              </button>
+            </div>
+
+            <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-6">
+              <div class="flex flex-col gap-2">
+                <label for="email" class="font-medium text-ink-teal">E-Mail Adresse</label>
+                <input pInputText id="email" formControlName="email" type="email" placeholder="max@muster.de" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none shadow-sm" />
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <label for="password" class="font-medium text-ink-teal">Passwort</label>
+                <p-password id="password" formControlName="password" placeholder="••••••••" [toggleMask]="true" [feedback]="true" promptLabel="Bitte Passwort eingeben" weakLabel="Schwach" mediumLabel="Mittel" strongLabel="Stark" styleClass="w-full" inputStyleClass="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none transition-all shadow-sm"></p-password>
+                <small *ngIf="registerForm.get('password')?.errors?.['pattern'] && registerForm.get('password')?.touched" class="text-status-brick font-bold">Muss mind. 1 Großbuchstaben, 1 Kleinbuchstaben & 1 Zahl enthalten.</small>
+              </div>
+
+              <div class="flex flex-col gap-2">
+                <label for="confirmPassword" class="font-medium text-ink-teal">Passwort wiederholen</label>
+                <p-password id="confirmPassword" formControlName="confirmPassword" placeholder="••••••••" [toggleMask]="true" [feedback]="false" styleClass="w-full" inputStyleClass="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none transition-all shadow-sm"></p-password>
+                <small *ngIf="registerForm.errors?.['passwordMismatch'] && registerForm.get('confirmPassword')?.touched" class="text-status-brick font-bold">Die Passwörter stimmen nicht überein!</small>
+              </div>
+
+              <p-button type="submit" label="Registrieren" icon="pi pi-check" [disabled]="registerForm.invalid" styleClass="w-full mt-4 p-4 rounded-xl font-bold text-lg text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all shadow-md flex justify-center items-center gap-2"></p-button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Links -->
+      <div class="text-center text-sm mt-6">
+        <span class="text-gray-600">Hast du schon einen Account? </span>
+        <a routerLink="/login" class="font-medium text-warm-brass hover:text-warm-brass-dark transition-colors">Hier einloggen</a>
+      </div>
+
     </div>
   </div>
 </div>
