@@ -1,0 +1,18 @@
+<nav class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-ink-teal border-t border-white/10 flex justify-around items-stretch h-16 pb-[env(safe-area-inset-bottom)]">
+  <button class="flex flex-col items-center justify-center gap-1 flex-1 text-warm-brass">
+    <i class="pi pi-th-large text-lg"></i>
+    <span class="text-[10px] font-medium">Dashboard</span>
+  </button>
+  <button *ngIf="userRole === 'ROLE_DOCTOR'" (click)="openSchedule.emit()" class="flex flex-col items-center justify-center gap-1 flex-1 text-gray-400">
+    <i class="pi pi-clock text-lg"></i>
+    <span class="text-[10px] font-medium">Zeiten</span>
+  </button>
+  <button *ngIf="userRole === 'ROLE_PATIENT'" (click)="openNewAppointment.emit()" class="flex flex-col items-center justify-center gap-1 flex-1 text-gray-400">
+    <i class="pi pi-calendar-plus text-lg"></i>
+    <span class="text-[10px] font-medium">Termin</span>
+  </button>
+  <button (click)="logoutClicked.emit()" class="flex flex-col items-center justify-center gap-1 flex-1 text-gray-400">
+    <i class="pi pi-sign-out text-lg"></i>
+    <span class="text-[10px] font-medium">Logout</span>
+  </button>
+</nav>
