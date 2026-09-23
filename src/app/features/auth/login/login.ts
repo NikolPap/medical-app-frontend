@@ -14,6 +14,7 @@ import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { MessageService } from 'primeng/api';
+import { LegalFooterComponent } from '../../../shared/legal-footer/legal-footer';
 
 @Component({
   selector: 'app-login',
@@ -25,7 +26,8 @@ import { MessageService } from 'primeng/api';
     PasswordModule,
     ButtonModule,
     CardModule,
-    RouterModule
+    RouterModule,
+    LegalFooterComponent
   ],
   templateUrl: './login.html',
   styleUrl: './login.scss',
