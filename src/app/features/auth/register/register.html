@@ -147,7 +147,6 @@
                 <p-password id="confirmPassword" formControlName="confirmPassword" placeholder="••••••••" [toggleMask]="true" [feedback]="false" styleClass="w-full" inputStyleClass="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none transition-all shadow-sm"></p-password>
                 <small *ngIf="registerForm.errors?.['passwordMismatch'] && registerForm.get('confirmPassword')?.touched" class="text-status-brick font-bold">Die Passwörter stimmen nicht überein!</small>
               </div>
-
               <p-button type="submit" label="Registrieren" icon="pi pi-check" [disabled]="registerForm.invalid" styleClass="w-full mt-4 p-4 rounded-xl font-bold text-lg text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all shadow-md flex justify-center items-center gap-2"></p-button>
             </form>
           </div>
@@ -160,7 +159,7 @@
         <span class="text-gray-600">Hast du schon einen Account? </span>
         <a routerLink="/login" class="font-medium text-warm-brass hover:text-warm-brass-dark transition-colors">Hier einloggen</a>
       </div>
-
+ <app-legal-footer></app-legal-footer>
     </div>
   </div>
 </div>
