@@ -10,11 +10,12 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { MessageService } from 'primeng/api';
+import { LegalFooterComponent } from '../../../shared/legal-footer/legal-footer';
 
 @Component({
   selector: 'app-verify',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, InputTextModule, ButtonModule, CardModule],
+  imports: [CommonModule, ReactiveFormsModule, InputTextModule, ButtonModule, CardModule, LegalFooterComponent],
   templateUrl: './verify.html',
   styleUrl: './verify.scss'
 })
