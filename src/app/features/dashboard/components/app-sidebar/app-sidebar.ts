@@ -1,0 +1,16 @@
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-sidebar',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './app-sidebar.html',
+  host: { style: 'display: contents' }   // ΝΕΟ
+})
+export class AppSidebarComponent {
+  @Input() userRole: string = '';
+  @Output() openSchedule = new EventEmitter<void>();
+  @Output() openNewAppointment = new EventEmitter<void>();
+  @Output() logoutClicked = new EventEmitter<void>();
+}
