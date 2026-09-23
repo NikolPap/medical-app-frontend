@@ -19,19 +19,21 @@ import { ButtonModule } from 'primeng/button';
 })
 export class BookAppointmentComponent implements OnInit {
 
-  @Output() appointmentBooked = new EventEmitter<void>(); 
+  @Output() appointmentBooked = new EventEmitter<void>();
 
   showDialog: boolean = false;
   newAppointmentForm: FormGroup;
-  doctors: { label: string, value: number }[] = []; 
+  doctors: { label: string, value: number, specialty?: string }[] = [];
   minDate: Date = new Date();
   availableSlots: string[] = [];
   selectedTimeSlot: string = '';
+  isLoadingSlots: boolean = false;
+  isBooking: boolean = false;
 
   // FÜR DAS VERSCHIEBEN (RESCHEDULE)
-  patientEmailToReschedule: string | null = null; 
-  oldAppointmentIdToCancel: number | null = null; // NEU: Welcher Termin soll storniert werden?
-  userRole: string = ''; // NEU: Wer bucht gerade?
+  patientEmailToReschedule: string | null = null;
+  oldAppointmentIdToCancel: number | null = null;
+  userRole: string = '';
 
   constructor(
     private fb: FormBuilder,
@@ -52,9 +54,30 @@ export class BookAppointmentComponent implements OnInit {
   loadDoctors() {
     this.appointmentService.getAllDoctors().subscribe({
       next: (docs: DoctorInfo[]) => {
-        this.doctors = docs.map(doc => ({ label: `Dr. ${doc.lastName} (${doc.specialty || 'Allgemein'})`, value: doc.id }));
+        this.doctors = docs.map(doc => ({
+          label: `Dr. ${doc.lastName} (${doc.specialty || 'Allgemein'})`,
+          value: doc.id,
+          specialty: doc.specialty || 'Allgemeinmedizin'
+        }));
       }
     });
+  }
+
+  get isRescheduleMode(): boolean {
+    return this.oldAppointmentIdToCancel !== null;
+  }
+
+  get selectedDoctor(): { label: string, value: number, specialty?: string } | undefined {
+    return this.doctors.find(d => d.value === this.newAppointmentForm.value.doctorId);
+  }
+
+  // Slots gruppiert nach Vormittag / Nachmittag
+  get morningSlots(): string[] {
+    return this.availableSlots.filter(t => parseInt(t.split(':')[0], 10) < 12);
+  }
+
+  get afternoonSlots(): string[] {
+    return this.availableSlots.filter(t => parseInt(t.split(':')[0], 10) >= 12);
   }
 
   openDialog() {
@@ -72,13 +95,20 @@ export class BookAppointmentComponent implements OnInit {
       const d = new Date(rawDate);
       const formattedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
+      this.isLoadingSlots = true;
+      this.availableSlots = [];
+      this.selectedTimeSlot = '';
+      this.newAppointmentForm.patchValue({ appointmentTime: '' });
+
       this.appointmentService.getAvailableSlots(doctorId, formattedDate).subscribe({
         next: (slots: string[]) => {
           this.availableSlots = slots;
-          this.selectedTimeSlot = '';
-          this.newAppointmentForm.patchValue({ appointmentTime: '' });
+          this.isLoadingSlots = false;
         },
-        error: (err: HttpErrorResponse) => console.error("Fehler beim Laden der Slots", err)
+        error: (err: HttpErrorResponse) => {
+          this.isLoadingSlots = false;
+          console.error('Fehler beim Laden der Slots', err);
+        }
       });
     }
   }
@@ -99,18 +129,16 @@ export class BookAppointmentComponent implements OnInit {
       doctorId: this.newAppointmentForm.value.doctorId,
       appointmentDate: formattedDate,
       appointmentTime: this.newAppointmentForm.value.appointmentTime,
-      patientEmail: this.patientEmailToReschedule 
+      patientEmail: this.patientEmailToReschedule
     };
 
-    // 1. Neuen Termin buchen
+    this.isBooking = true;
+
     this.appointmentService.createAppointment(requestData).subscribe({
       next: (response: any) => {
-        
-        // 2. Wenn es ein VERSCHIEBEN war, löschen (stornieren) wir den alten Termin!
         if (this.oldAppointmentIdToCancel !== null) {
           this.appointmentService.updateAppointmentStatus(this.oldAppointmentIdToCancel, 'CANCELLED').subscribe({
             next: () => {
-              // 3. Wenn es der ARZT war, der verschoben hat, setzen wir den NEUEN Termin sofort auf CONFIRMED!
               if (this.userRole === 'ROLE_DOCTOR') {
                 this.appointmentService.updateAppointmentStatus(response.id, 'CONFIRMED').subscribe({
                   next: () => this.finishBooking('Termin erfolgreich verschoben und bestätigt!')
@@ -120,24 +148,23 @@ export class BookAppointmentComponent implements OnInit {
               }
             }
           });
-        } 
-        // Normaler Buchungsvorgang (Kein Verschieben)
-        else {
+        } else {
           this.finishBooking('Termin wurde erfolgreich gebucht!');
         }
       },
       error: (err: HttpErrorResponse) => {
-        this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Termin konnte nicht gebucht werden.'});
+        this.isBooking = false;
+        this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Termin konnte nicht gebucht werden.' });
       }
     });
   }
 
-  // Hilfsmethode, um den Dialog sauber zu schließen
   private finishBooking(successMessage: string) {
-    this.messageService.add({severity: 'success', summary: 'Erfolg', detail: successMessage});
+    this.isBooking = false;
+    this.messageService.add({ severity: 'success', summary: 'Erfolg', detail: successMessage });
     this.showDialog = false;
-    this.oldAppointmentIdToCancel = null; // Reset
-    this.patientEmailToReschedule = null; // Reset
-    this.appointmentBooked.emit(); 
+    this.oldAppointmentIdToCancel = null;
+    this.patientEmailToReschedule = null;
+    this.appointmentBooked.emit();
   }
 }
