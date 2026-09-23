@@ -1,0 +1,54 @@
+<div class="group flex items-center justify-between p-3 sm:p-4 rounded-2xl border transition-all"
+     [ngClass]="{
+        'border-gray-100 opacity-60 cursor-default': appt | isBlockedDay,
+        'border-gray-100 hover:border-gray-200 hover:bg-cool-paper/40 cursor-pointer': !(appt | isBlockedDay),
+        'opacity-70': appt.status === 'CANCELLED' && !(appt | isBlockedDay)
+     }"
+     (click)="onRowClick()">
+
+  <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+    <span class="w-10 sm:w-12 text-xs sm:text-sm font-bold text-ink-teal flex-shrink-0" [ngClass]="{'text-gray-400': appt.status === 'CANCELLED'}">
+      {{ appt.appointmentDate | date: 'HH:mm' }}
+    </span>
+
+    <p-avatar *ngIf="appt | isBlockedDay" icon="pi pi-ban" shape="circle" styleClass="bg-status-brick text-white w-8 h-8 sm:w-9 sm:h-9 text-xs sm:text-sm"></p-avatar>
+    <p-avatar *ngIf="!(appt | isBlockedDay)" [label]="appt.patientName | initial" shape="circle" styleClass="bg-cool-paper text-ink-teal font-bold w-8 h-8 sm:w-9 sm:h-9 text-xs sm:text-sm"></p-avatar>
+
+    <div class="min-w-0">
+      <p class="font-semibold text-xs sm:text-sm truncate" [ngClass]="appt.status === 'CANCELLED' ? 'text-gray-500 line-through' : 'text-ink-teal'" *ngIf="!(appt | isBlockedDay)">
+        {{ appt.patientName }}
+      </p>
+      <p class="font-semibold text-status-brick text-xs sm:text-sm" *ngIf="appt | isBlockedDay">
+        Blockiert / Urlaub
+      </p>
+
+      <p class="flex items-center gap-2 text-[11px] sm:text-xs mt-0.5" [ngClass]="appt | statusTextClass">
+        <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" [ngClass]="appt | statusDotClass"></span>
+        {{ appt | statusLabel }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Quick actions: nur im 'full' Modus, nicht bei blockierten Tagen -->
+  <div *ngIf="mode === 'full' && !(appt | isBlockedDay)" class="flex items-center gap-2" [ngSwitch]="true">
+    <ng-container *ngSwitchCase="appt.status === 'PENDING'">
+      <button (click)="onConfirm($event)" class="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-status-sage/10 transition-colors">
+        <i class="pi pi-check text-xs text-status-sage"></i>
+      </button>
+      <button (click)="onCancel($event)" class="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-status-brick/10 transition-colors">
+        <i class="pi pi-times text-xs text-status-brick"></i>
+      </button>
+    </ng-container>
+
+    <ng-container *ngSwitchDefault>
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 group-hover:text-ink-teal group-hover:bg-gray-100 transition-colors">
+        <i class="pi pi-ellipsis-v text-sm"></i>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- 'compact' Modus: nur ein Chevron -->
+  <div *ngIf="mode === 'compact'" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 group-hover:text-ink-teal group-hover:bg-gray-100 transition-colors flex-shrink-0">
+    <i class="pi pi-ellipsis-v text-sm"></i>
+  </div>
+</div>
