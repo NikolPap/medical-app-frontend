@@ -9,11 +9,12 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { MessageService } from 'primeng/api';
+import { LegalFooterComponent } from '../../../shared/legal-footer/legal-footer';
 
 @Component({
   selector: 'app-forgot-password',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, InputTextModule, ButtonModule, CardModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, InputTextModule, ButtonModule, CardModule, LegalFooterComponent, LegalFooterComponent],
   templateUrl: './forgot-password.html'
 })
 export class ForgotPasswordComponent {
