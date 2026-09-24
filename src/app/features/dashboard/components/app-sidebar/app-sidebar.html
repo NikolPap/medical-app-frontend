@@ -25,10 +25,23 @@
     </nav>
   </div>
 
-  <div class="p-6 mb-2 border-t border-white/10">
-    <a class="flex items-center gap-4 py-3 px-4 rounded-xl text-gray-400 hover:text-status-brick hover:bg-white/5 transition-colors cursor-pointer" (click)="logoutClicked.emit()">
-      <i class="pi pi-sign-out text-lg"></i>
-      <span class="hidden lg:block font-medium">Log out</span>
-    </a>
+  <div>
+    <div class="px-6 lg:px-8">
+      <a class="flex items-center gap-4 py-3 px-4 rounded-xl text-gray-400 hover:text-status-brick hover:bg-white/5 transition-colors cursor-pointer" (click)="logoutClicked.emit()">
+        <i class="pi pi-sign-out text-lg"></i>
+        <span class="hidden lg:block font-medium">Log out</span>
+      </a>
+    </div>
+
+    <!-- Legal links: nur sichtbar wenn Text angezeigt wird (lg:) -->
+    <div class="hidden lg:flex flex-col gap-1 px-8 pb-6 pt-2 text-[10px] text-gray-500">
+      <div class="flex gap-2 flex-wrap">
+        <a routerLink="/impressum" class="hover:text-white transition-colors">Impressum</a>
+        <span>·</span>
+        <a routerLink="/datenschutz" class="hover:text-white transition-colors">Datenschutz</a>
+        <span>·</span>
+        <a routerLink="/agb" class="hover:text-white transition-colors">AGB</a>
+      </div>
+    </div>
   </div>
 </aside>
