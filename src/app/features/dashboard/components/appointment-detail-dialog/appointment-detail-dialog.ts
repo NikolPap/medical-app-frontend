@@ -30,6 +30,26 @@ export class AppointmentDetailDialogComponent {
     this.visibleChange.emit(false);
   }
 
+  get isPastAppointment(): boolean {
+    if (!this.appointment) return false;
+    return new Date(this.appointment.appointmentDate) < new Date();
+  }
+
+  // NEU: Darf der Patient noch stornieren/verschieben? (48-Stunden-Regel)
+  get canCancelOrReschedule(): boolean {
+    if (!this.appointment || this.userRole === 'ROLE_DOCTOR') {
+      return true; // Der Arzt darf immer!
+    }
+
+    const apptDate = new Date(this.appointment.appointmentDate).getTime();
+    const now = new Date().getTime();
+    
+    // Wie viele Stunden sind es noch bis zum Termin?
+    const hoursDifference = (apptDate - now) / (1000 * 60 * 60);
+
+    return hoursDifference >= 48; // Nur true, wenn mehr als 48 Stunden entfernt!
+  }
+
   getTimelineSteps(appt: Appointment): { label: string, state: 'done' | 'current' | 'future' }[] {
     const isPast = new Date(appt.appointmentDate) < new Date();
     return [
