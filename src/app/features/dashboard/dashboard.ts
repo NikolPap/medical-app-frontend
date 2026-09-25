@@ -210,13 +210,17 @@ export class DashboardComponent implements OnInit {
   quickCancel(appt: Appointment) { this.selectedAppointment = appt; this.changeStatus('CANCELLED'); }
 
   openRescheduleDialog(appt: Appointment) {
-    this.showStatusDialog = false;
-    this.bookAppointmentModal.patientEmailToReschedule = appt.patientEmail;
-    this.bookAppointmentModal.oldAppointmentIdToCancel = appt.id;
-    this.bookAppointmentModal.userRole = this.userRole;
-    if (appt.doctorId) this.bookAppointmentModal.newAppointmentForm.patchValue({ doctorId: appt.doctorId });
-    this.bookAppointmentModal.openDialog();
+  this.showStatusDialog = false;
+  this.bookAppointmentModal.patientEmailToReschedule = appt.patientEmail;
+  this.bookAppointmentModal.oldAppointmentIdToCancel = appt.id;
+  this.bookAppointmentModal.userRole = this.userRole;
+
+  this.bookAppointmentModal.openDialog(); // 1. reset() γίνεται εδώ
+
+  if (appt.doctorId) {
+    this.bookAppointmentModal.newAppointmentForm.patchValue({ doctorId: appt.doctorId }); // 2. μετά το patch
   }
+}
 
   logout() { localStorage.removeItem('jwt_token'); window.location.href = '/login'; }
 
