@@ -1,11 +1,13 @@
 <div class="min-h-screen flex flex-col md:flex-row bg-cool-paper font-sans">
-  
   <!-- LINKE SEITE (Brand / Ink Teal) -->
-  <div class="md:w-5/12 bg-ink-teal text-white flex flex-col justify-between p-8 md:p-16 shadow-2xl z-10">
-    
+  <div
+    class="md:w-5/12 bg-ink-teal text-white flex flex-col justify-between p-8 md:p-16 shadow-2xl z-10"
+  >
     <!-- Logo -->
     <div class="flex items-center gap-3">
-      <div class="w-12 h-12 bg-warm-brass rounded-2xl flex items-center justify-center text-ink-teal text-2xl shadow-lg">
+      <div
+        class="w-12 h-12 bg-warm-brass rounded-2xl flex items-center justify-center text-ink-teal text-2xl shadow-lg"
+      >
         <i class="pi pi-heart-fill"></i>
       </div>
       <span class="font-serif text-3xl tracking-wide font-semibold text-warm-brass">MedSync</span>
@@ -26,68 +28,87 @@
     </div>
   </div>
 
-
   <!-- RECHTE SEITE (Login Formular) -->
   <div class="flex-1 flex items-center justify-center p-8 md:p-24 relative">
-    
     <div class="w-full max-w-md">
-      
       <div class="mb-10">
         <h2 class="font-serif text-4xl text-ink-teal font-semibold mb-2">Willkommen zurück</h2>
         <p class="text-gray-500">Bitte gib deine Zugangsdaten ein.</p>
       </div>
 
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-6">
-        
         <!-- Email -->
         <div class="flex flex-col gap-2">
           <label for="email" class="font-medium text-ink-teal">E-Mail Adresse</label>
-          <!-- Helle Inputs passend zum cool-paper -->
-          <input 
-            pInputText 
-            id="email" 
-            formControlName="email" 
-            type="email" 
-            placeholder="arzt@klinik.de" 
-            class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm" />
+          <input
+            pInputText
+            id="email"
+            formControlName="email"
+            type="email"
+            placeholder="arzt@klinik.de"
+            class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm"
+          />
+          <small
+            *ngIf="loginForm.get('email')?.errors?.['required'] && loginForm.get('email')?.touched"
+            class="text-status-brick font-bold"
+          >
+            Bitte gib deine E-Mail Adresse ein.
+          </small>
+          <small
+            *ngIf="loginForm.get('email')?.errors?.['email'] && loginForm.get('email')?.touched"
+            class="text-status-brick font-bold"
+          >
+            Bitte gib eine gültige E-Mail Adresse ein.
+          </small>
         </div>
 
         <!-- Passwort -->
         <div class="flex flex-col gap-2">
           <label for="password" class="font-medium text-ink-teal">Passwort</label>
-          <p-password 
-            id="password" 
-            formControlName="password" 
-            placeholder="••••••••" 
-            [toggleMask]="true" 
-            [feedback]="false" 
-            styleClass="w-full" 
-            inputStyleClass="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm">
+          <p-password
+            id="password"
+            formControlName="password"
+            placeholder="••••••••"
+            [toggleMask]="true"
+            [feedback]="false"
+            styleClass="w-full"
+            inputStyleClass="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm"
+          >
           </p-password>
+          <small
+            *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+            class="text-status-brick font-bold"
+          >
+            Das Passwort muss mindestens 6 Zeichen lang sein.
+          </small>
         </div>
 
         <!-- Links -->
         <div class="flex justify-between items-center text-sm mt-2">
-          <a routerLink="/forgot-password" class="font-medium text-warm-brass hover:text-warm-brass-dark transition-colors">
+          <a
+            routerLink="/forgot-password"
+            class="font-medium text-warm-brass hover:text-warm-brass-dark transition-colors"
+          >
             Passwort vergessen?
           </a>
-          <a routerLink="/register" class="font-medium text-warm-brass hover:text-warm-brass-dark transition-colors">
+          <a
+            routerLink="/register"
+            class="font-medium text-warm-brass hover:text-warm-brass-dark transition-colors"
+          >
             Account erstellen
           </a>
         </div>
 
         <!-- Custom Button (Warm Brass) -->
-        <p-button 
-          type="submit" 
+        <p-button
+          type="submit"
           [disabled]="loginForm.invalid"
-          styleClass="w-full mt-4 p-4 rounded-xl font-bold text-lg text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all shadow-md flex justify-center items-center gap-2">
-          <ng-template pTemplate="content">
-            <i class="pi pi-sign-in"></i> Einloggen
-          </ng-template>
+          styleClass="w-full mt-4 p-4 rounded-xl font-bold text-lg text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all shadow-md flex justify-center items-center gap-2"
+        >
+          <ng-template pTemplate="content"> <i class="pi pi-sign-in"></i> Einloggen </ng-template>
         </p-button>
-
       </form>
-   <app-legal-footer></app-legal-footer>
+      <app-legal-footer></app-legal-footer>
     </div>
   </div>
 </div>
