@@ -14,11 +14,11 @@ import { LegalFooterComponent } from '../../../shared/legal-footer/legal-footer'
 @Component({
   selector: 'app-forgot-password',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, InputTextModule, ButtonModule, CardModule, LegalFooterComponent, LegalFooterComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, InputTextModule, ButtonModule, CardModule, LegalFooterComponent],
   templateUrl: './forgot-password.html'
 })
 export class ForgotPasswordComponent {
-  
+
   forgotForm: FormGroup;
 
   constructor(private fb: FormBuilder, private authService: AuthService, private router: Router, private messageService: MessageService) {
@@ -28,14 +28,17 @@ export class ForgotPasswordComponent {
   }
 
   onSubmit() {
-    if (this.forgotForm.invalid) return;
+    if (this.forgotForm.invalid) {
+      this.forgotForm.markAllAsTouched();
+      return;
+    }
     this.authService.forgotPassword(this.forgotForm.value).subscribe({
       next: () => {
-        this.messageService.add({severity: 'info', summary: 'Gesendet', detail: 'Falls die E-Mail existiert, wurde ein Code gesendet.'});
+        this.messageService.add({ severity: 'info', summary: 'Gesendet', detail: 'Falls die E-Mail existiert, wurde ein Code gesendet.' });
         this.router.navigate(['/reset-password']);
       },
       error: (err: HttpErrorResponse) => {
-        this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Etwas ist schiefgelaufen.'});
+        this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Etwas ist schiefgelaufen.' });
       }
     });
   }
