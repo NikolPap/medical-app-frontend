@@ -35,18 +35,20 @@ export class ResetPasswordComponent {
 
   constructor(private fb: FormBuilder, private authService: AuthService, private router: Router, private messageService: MessageService) {
     this.resetForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      code: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(6)]],
-      // Diese Felder sind im 1. Schritt egal, werden aber im 2. Schritt wichtig
-      newPassword: ['', [Validators.pattern('(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{6,}')]],
-      confirmPassword: ['']
-    }, { validators: passwordMatchValidator });
+  email: ['', [Validators.required, Validators.email]],
+  code: ['', [Validators.required, Validators.pattern(/^[0-9]{6}$/)]],
+  newPassword: ['', [Validators.pattern('(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{6,}')]],
+  confirmPassword: ['']
+  }, { validators: passwordMatchValidator });
   }
 
   // Wird aufgerufen, wenn der Benutzer auf "Code überprüfen" klickt (Schritt 1)
-  verifyCode() {
-    if (this.resetForm.get('email')?.invalid || this.resetForm.get('code')?.invalid) return;
-
+ verifyCode() {
+  if (this.resetForm.get('email')?.invalid || this.resetForm.get('code')?.invalid) {
+    this.resetForm.get('email')?.markAsTouched();
+    this.resetForm.get('code')?.markAsTouched();
+    return;
+  }
     const requestData = {
       email: this.resetForm.value.email,
       code: this.resetForm.value.code
