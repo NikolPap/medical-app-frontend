@@ -1,6 +1,5 @@
 <div class="min-h-screen flex flex-col md:flex-row bg-cool-paper font-sans">
 
-  <!-- LINKE SEITE (Brand) -->
   <div class="md:w-5/12 bg-ink-teal text-white flex flex-col justify-between p-8 md:p-16 shadow-2xl z-10">
     <div class="flex items-center gap-3">
       <div class="w-12 h-12 bg-warm-brass rounded-2xl flex items-center justify-center text-ink-teal text-2xl shadow-lg">
@@ -16,19 +15,15 @@
       <p class="text-lg text-gray-300 font-light">Dein Account in nur wenigen Sekunden.</p>
     </div>
 
-    <!-- Mini-Progress im Brand-Panel, synchron zum Hauptindikator -->
     <div class="hidden md:flex items-center gap-2 mt-auto">
       <div class="w-8 h-1 rounded-full transition-colors duration-300" [ngClass]="currentStep >= 1 ? 'bg-warm-brass' : 'bg-gray-600'"></div>
       <div class="w-8 h-1 rounded-full transition-colors duration-300" [ngClass]="currentStep >= 2 ? 'bg-warm-brass' : 'bg-gray-600'"></div>
     </div>
   </div>
 
-
-  <!-- RECHTE SEITE (Formular) -->
   <div class="flex-1 flex items-center justify-center p-8 md:p-16 relative overflow-hidden">
     <div class="w-full max-w-md">
 
-      <!-- NEUER PROGRESS-INDICATOR: Kreise + Verbindungslinie -->
       <div class="flex items-center gap-3 mb-10">
         <div class="flex items-center gap-2.5">
           <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 flex-shrink-0"
@@ -53,15 +48,12 @@
         </div>
       </div>
 
-      <!-- SLIDING CAROUSEL: beide Schritte nebeneinander, width 200%, per translateX animiert -->
       <div class="overflow-hidden">
         <div class="flex transition-transform duration-400 ease-in-out"
              [style.width.%]="200"
              [style.transform]="currentStep === 1 ? 'translateX(0%)' : 'translateX(-50%)'">
 
-          <!-- ======================================= -->
           <!-- SCHRITT 1 -->
-          <!-- ======================================= -->
           <div class="w-1/2 pr-3 flex-shrink-0">
             <div class="mb-8">
               <h2 class="font-serif text-4xl text-ink-teal font-semibold mb-2">Account erstellen</h2>
@@ -78,26 +70,44 @@
                 <div class="flex flex-col gap-2 w-full">
                   <label for="firstName" class="font-medium text-ink-teal">Vorname</label>
                   <input pInputText id="firstName" formControlName="firstName" type="text" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm" />
+                  <small *ngIf="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched" class="text-status-brick font-bold">
+                    Bitte gib deinen Vornamen ein.
+                  </small>
                 </div>
                 <div class="flex flex-col gap-2 w-full">
                   <label for="lastName" class="font-medium text-ink-teal">Nachname</label>
                   <input pInputText id="lastName" formControlName="lastName" type="text" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm" />
+                  <small *ngIf="registerForm.get('lastName')?.invalid && registerForm.get('lastName')?.touched" class="text-status-brick font-bold">
+                    Bitte gib deinen Nachnamen ein.
+                  </small>
                 </div>
               </div>
 
               <div class="flex flex-col gap-2">
                 <label for="phoneNumber" class="font-medium text-ink-teal">Telefonnummer</label>
                 <input pInputText id="phoneNumber" formControlName="phoneNumber" type="tel" placeholder="+49 123 456789" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none shadow-sm" />
+                <small *ngIf="registerForm.get('phoneNumber')?.errors?.['required'] && registerForm.get('phoneNumber')?.touched" class="text-status-brick font-bold">
+                  Bitte gib deine Telefonnummer ein.
+                </small>
+                <small *ngIf="registerForm.get('phoneNumber')?.errors?.['pattern'] && registerForm.get('phoneNumber')?.touched" class="text-status-brick font-bold">
+                  Bitte gib eine gültige Telefonnummer ein (z.B. +49 123 456789).
+                </small>
               </div>
 
               <ng-container *ngIf="registerForm.get('role')?.value === 'ROLE_PATIENT'">
                 <div class="flex flex-col gap-2">
                   <label class="font-medium text-ink-teal">Geschlecht</label>
                   <p-dropdown [options]="genderOptions" formControlName="gender" placeholder="Bitte wählen" optionLabel="label" optionValue="value" styleClass="w-full rounded-xl border-gray-200" inputStyleClass="p-4"></p-dropdown>
+                  <small *ngIf="registerForm.get('gender')?.invalid && registerForm.get('gender')?.touched" class="text-status-brick font-bold">
+                    Bitte wähle dein Geschlecht.
+                  </small>
                 </div>
                 <div class="flex flex-col gap-2">
                   <label class="font-medium text-ink-teal">Versicherungsart</label>
                   <p-dropdown [options]="insuranceOptions" formControlName="insuranceType" placeholder="Bitte wählen" optionLabel="label" optionValue="value" styleClass="w-full rounded-xl border-gray-200" inputStyleClass="p-4"></p-dropdown>
+                  <small *ngIf="registerForm.get('insuranceType')?.invalid && registerForm.get('insuranceType')?.touched" class="text-status-brick font-bold">
+                    Bitte wähle deine Versicherungsart.
+                  </small>
                 </div>
               </ng-container>
 
@@ -105,20 +115,24 @@
                 <div class="flex flex-col gap-2">
                   <label for="specialty" class="font-medium text-ink-teal">Fachrichtung</label>
                   <input pInputText id="specialty" formControlName="specialty" type="text" placeholder="z.B. Kardiologe, Zahnarzt..." class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none shadow-sm" />
+                  <small *ngIf="registerForm.get('specialty')?.invalid && registerForm.get('specialty')?.touched" class="text-status-brick font-bold">
+                    Bitte gib deine Fachrichtung an.
+                  </small>
                 </div>
                 <div class="flex flex-col gap-2">
                   <label for="address" class="font-medium text-ink-teal">Praxis-Adresse</label>
                   <input pInputText id="address" formControlName="address" type="text" placeholder="Straße, PLZ, Ort" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none shadow-sm" />
+                  <small *ngIf="registerForm.get('address')?.invalid && registerForm.get('address')?.touched" class="text-status-brick font-bold">
+                    Bitte gib deine Praxis-Adresse an.
+                  </small>
                 </div>
               </ng-container>
 
-              <p-button type="button" label="Weiter" icon="pi pi-arrow-right" iconPos="right" [disabled]="!isStep1Valid()" (onClick)="nextStep()" styleClass="w-full mt-4 p-4 rounded-xl font-bold text-lg text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all shadow-md"></p-button>
+              <p-button type="button" label="Weiter" icon="pi pi-arrow-right" iconPos="right" (onClick)="nextStep()" styleClass="w-full mt-4 p-4 rounded-xl font-bold text-lg text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all shadow-md"></p-button>
             </form>
           </div>
 
-          <!-- ======================================= -->
           <!-- SCHRITT 2 -->
-          <!-- ======================================= -->
           <div class="w-1/2 pl-3 flex-shrink-0">
             <div class="mb-8 flex items-start justify-between">
               <div>
@@ -134,41 +148,57 @@
               <div class="flex flex-col gap-2">
                 <label for="email" class="font-medium text-ink-teal">E-Mail Adresse</label>
                 <input pInputText id="email" formControlName="email" type="email" placeholder="max@muster.de" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none shadow-sm" />
+                <small *ngIf="registerForm.get('email')?.errors?.['required'] && registerForm.get('email')?.touched" class="text-status-brick font-bold">
+                  Bitte gib deine E-Mail Adresse ein.
+                </small>
+                <small *ngIf="registerForm.get('email')?.errors?.['email'] && registerForm.get('email')?.touched" class="text-status-brick font-bold">
+                  Bitte gib eine gültige E-Mail Adresse ein.
+                </small>
               </div>
 
               <div class="flex flex-col gap-2">
                 <label for="password" class="font-medium text-ink-teal">Passwort</label>
                 <p-password id="password" formControlName="password" placeholder="••••••••" [toggleMask]="true" [feedback]="true" promptLabel="Bitte Passwort eingeben" weakLabel="Schwach" mediumLabel="Mittel" strongLabel="Stark" styleClass="w-full" inputStyleClass="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none transition-all shadow-sm"></p-password>
-                <small *ngIf="registerForm.get('password')?.errors?.['pattern'] && registerForm.get('password')?.touched" class="text-status-brick font-bold">Muss mind. 1 Großbuchstaben, 1 Kleinbuchstaben & 1 Zahl enthalten.</small>
+                <small *ngIf="registerForm.get('password')?.errors?.['required'] && registerForm.get('password')?.touched" class="text-status-brick font-bold">
+                  Bitte gib ein Passwort ein.
+                </small>
+                <small *ngIf="registerForm.get('password')?.errors?.['pattern'] && registerForm.get('password')?.touched" class="text-status-brick font-bold">
+                  Muss mind. 1 Großbuchstaben, 1 Kleinbuchstaben & 1 Zahl enthalten.
+                </small>
               </div>
-              
 
               <div class="flex flex-col gap-2">
                 <label for="confirmPassword" class="font-medium text-ink-teal">Passwort wiederholen</label>
                 <p-password id="confirmPassword" formControlName="confirmPassword" placeholder="••••••••" [toggleMask]="true" [feedback]="false" styleClass="w-full" inputStyleClass="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass outline-none transition-all shadow-sm"></p-password>
-                <small *ngIf="registerForm.errors?.['passwordMismatch'] && registerForm.get('confirmPassword')?.touched" class="text-status-brick font-bold">Die Passwörter stimmen nicht überein!</small>
+                <small *ngIf="registerForm.errors?.['passwordMismatch'] && registerForm.get('confirmPassword')?.touched" class="text-status-brick font-bold">
+                  Die Passwörter stimmen nicht überein!
+                </small>
               </div>
+
               <div class="flex items-start gap-3 bg-cool-paper/50 rounded-xl p-4">
-  <input type="checkbox" formControlName="acceptedTerms" id="acceptedTerms" class="mt-1 w-4 h-4 accent-warm-brass flex-shrink-0" />
-  <label for="acceptedTerms" class="text-xs text-gray-600 leading-relaxed">
-    Ich akzeptiere die <a routerLink="/agb" target="_blank" class="text-warm-brass font-medium hover:underline">AGB</a>
-    und habe die <a routerLink="/datenschutz" target="_blank" class="text-warm-brass font-medium hover:underline">Datenschutzerklärung</a>
-    gelesen und stimme der Verarbeitung meiner Gesundheitsdaten zu.
-  </label>
-</div>
-              <p-button type="submit" label="Registrieren" icon="pi pi-check" [disabled]="registerForm.invalid" styleClass="w-full mt-4 p-4 rounded-xl font-bold text-lg text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all shadow-md flex justify-center items-center gap-2"></p-button>
+                <input type="checkbox" formControlName="acceptedTerms" id="acceptedTerms" class="mt-1 w-4 h-4 accent-warm-brass flex-shrink-0" />
+                <label for="acceptedTerms" class="text-xs text-gray-600 leading-relaxed">
+                  Ich akzeptiere die <a routerLink="/agb" target="_blank" class="text-warm-brass font-medium hover:underline">AGB</a>
+                  und habe die <a routerLink="/datenschutz" target="_blank" class="text-warm-brass font-medium hover:underline">Datenschutzerklärung</a>
+                  gelesen und stimme der Verarbeitung meiner Gesundheitsdaten zu.
+                </label>
+              </div>
+              <small *ngIf="registerForm.get('acceptedTerms')?.invalid && registerForm.get('acceptedTerms')?.touched" class="text-status-brick font-bold">
+                Bitte akzeptiere die AGB und die Datenschutzerklärung.
+              </small>
+
+              <p-button type="submit" label="Registrieren" icon="pi pi-check" styleClass="w-full mt-4 p-4 rounded-xl font-bold text-lg text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all shadow-md flex justify-center items-center gap-2"></p-button>
             </form>
           </div>
 
         </div>
       </div>
 
-      <!-- Links -->
       <div class="text-center text-sm mt-6">
         <span class="text-gray-600">Hast du schon einen Account? </span>
         <a routerLink="/login" class="font-medium text-warm-brass hover:text-warm-brass-dark transition-colors">Hier einloggen</a>
       </div>
- <app-legal-footer></app-legal-footer>
+      <app-legal-footer></app-legal-footer>
     </div>
   </div>
 </div>
