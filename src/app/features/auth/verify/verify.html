@@ -25,21 +25,34 @@
 
       <form [formGroup]="verifyForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-6">
         
-        <div class="flex flex-col gap-2">
-          <label for="email" class="font-medium text-ink-teal">E-Mail Adresse</label>
-          <input pInputText id="email" formControlName="email" type="email" placeholder="max@muster.de" class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm" />
-        </div>
+        <!-- verify.html -->
+<div class="flex flex-col gap-2">
+  <label for="email" class="font-medium text-ink-teal">E-Mail Adresse</label>
+  <input pInputText id="email" formControlName="email" type="email" placeholder="max@muster.de"
+         class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm" />
+  <small *ngIf="verifyForm.get('email')?.errors?.['required'] && verifyForm.get('email')?.touched" class="text-status-brick font-bold">
+    Bitte gib deine E-Mail Adresse ein.
+  </small>
+  <small *ngIf="verifyForm.get('email')?.errors?.['email'] && verifyForm.get('email')?.touched" class="text-status-brick font-bold">
+    Bitte gib eine gültige E-Mail Adresse ein.
+  </small>
+</div>
 
-        <div class="flex flex-col gap-2">
-          <label for="code" class="font-medium text-ink-teal">Bestätigungscode</label>
-          <input pInputText id="code" formControlName="code" type="text" placeholder="123456" maxlength="6" class="w-full p-4 text-center text-2xl tracking-[0.5em] font-bold bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm" />
-        </div>
+<div class="flex flex-col gap-2">
+  <label for="code" class="font-medium text-ink-teal">Bestätigungscode</label>
+  <input pInputText id="code" formControlName="code" type="text" placeholder="123456" maxlength="6"
+         class="w-full p-4 text-center text-2xl tracking-[0.5em] font-bold bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm" />
+  <small *ngIf="verifyForm.get('code')?.errors?.['required'] && verifyForm.get('code')?.touched" class="text-status-brick font-bold">
+    Bitte gib den Code ein.
+  </small>
+  <small *ngIf="verifyForm.get('code')?.errors?.['pattern'] && verifyForm.get('code')?.touched" class="text-status-brick font-bold">
+    Der Code muss aus genau 6 Ziffern bestehen.
+  </small>
+</div>
 
-        <p-button type="submit" [disabled]="verifyForm.invalid" styleClass="w-full mt-4 p-4 rounded-xl font-bold text-lg text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all shadow-md flex justify-center items-center gap-2">
-          <ng-template pTemplate="content">
-            <i class="pi pi-check-circle"></i> Konto freischalten
-          </ng-template>
-        </p-button>
+<p-button type="submit" styleClass="w-full mt-4 p-4 rounded-xl font-bold text-lg text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all shadow-md flex justify-center items-center gap-2">
+  <ng-template pTemplate="content"><i class="pi pi-check-circle"></i> Konto freischalten</ng-template>
+</p-button>
 
       </form>
        <app-legal-footer></app-legal-footer>
