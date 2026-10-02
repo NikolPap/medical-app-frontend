@@ -25,13 +25,16 @@ export class VerifyComponent {
 
   constructor(private fb: FormBuilder, private authService: AuthService, private router: Router,  private messageService: MessageService) {
     this.verifyForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      code: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(6)]],
-    });
+  email: ['', [Validators.required, Validators.email]],
+  code: ['', [Validators.required, Validators.pattern(/^[0-9]{6}$/)]],
+});
   }
 
  onSubmit() {
-    if (this.verifyForm.invalid) return;
+    if (this.verifyForm.invalid) {
+    this.verifyForm.markAllAsTouched();
+    return;
+  }
     this.authService.verify(this.verifyForm.value).subscribe({
       next: (response: ApiResponse) => {
         this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Konto verifiziert! Du kannst dich jetzt einloggen.'});
