@@ -201,7 +201,7 @@ export class DashboardComponent implements OnInit {
       },
       error: (err: any) => {
         this.isSubmitting = false;
-        this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Aktion nicht möglich.' });
+        this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Aktion nicht möglich.' });
       }
     });
   }
@@ -215,10 +215,10 @@ export class DashboardComponent implements OnInit {
   this.bookAppointmentModal.oldAppointmentIdToCancel = appt.id;
   this.bookAppointmentModal.userRole = this.userRole;
 
-  this.bookAppointmentModal.openDialog(); // 1. reset() γίνεται εδώ
+  this.bookAppointmentModal.openDialog(); 
 
   if (appt.doctorId) {
-    this.bookAppointmentModal.newAppointmentForm.patchValue({ doctorId: appt.doctorId }); // 2. μετά το patch
+    this.bookAppointmentModal.newAppointmentForm.patchValue({ doctorId: appt.doctorId });
   }
 }
 
