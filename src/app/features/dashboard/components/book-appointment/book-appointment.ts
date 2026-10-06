@@ -154,7 +154,7 @@ export class BookAppointmentComponent implements OnInit {
       },
       error: (err: HttpErrorResponse) => {
         this.isBooking = false;
-        this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Termin konnte nicht gebucht werden.' });
+        this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Termin konnte nicht gebucht werden.' });
       }
     });
   }
