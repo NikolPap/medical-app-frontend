@@ -67,7 +67,7 @@ export class ResetPasswordComponent {
         this.step = 2; // Gehe zu Schritt 2!
       },
       error: (err:  HttpErrorResponse) => {
-        this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Falscher Code oder E-Mail.'});
+        this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Falscher Code oder E-Mail.'});
       }
     });
   }
@@ -88,7 +88,7 @@ export class ResetPasswordComponent {
         this.router.navigate(['/login']);
       },
       error: (err:  HttpErrorResponse ) => {
-        this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Fehler beim Ändern.'});
+        this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Fehler beim Ändern.'});
       }
     });
   }
