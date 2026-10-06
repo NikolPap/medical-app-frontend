@@ -129,9 +129,9 @@ export class DoctorSettingsComponent implements OnInit {
         this.isSavingDuration = false;
         this.messageService.add({ severity: 'success', summary: 'Erfolg', detail: `Dauer auf ${this.selectedDuration} Min. geändert!` });
       },
-      error: (err: { error: { error: string } }) => {
+      error: (err: { error: { message: string } }) => {
         this.isSavingDuration = false;
-        this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Konnte Dauer nicht ändern.' });
+        this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Konnte Dauer nicht ändern.' });
       }
     });
   }
@@ -175,7 +175,6 @@ export class DoctorSettingsComponent implements OnInit {
     this.groupedHolidays = grouped;
   }
 
-  // Für die Kalender-Darstellung: bereits blockierte Tage als Date[] (für [disabledDates])
   get disabledHolidayDates(): Date[] {
     return this.myHolidays.map(h => new Date(h.holidayDate));
   }
@@ -242,9 +241,9 @@ export class DoctorSettingsComponent implements OnInit {
             this.loadMyHolidays();
             this.settingsChanged.emit();
           },
-          error: (err: { error: { error: string } }) => {
+          error: (err: { error: { message: string } }) => {
             this.isSavingHoliday = false;
-            this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Fehler beim Speichern.' });
+            this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Fehler beim Speichern.' });
           }
         });
       }
@@ -304,7 +303,6 @@ export class DoctorSettingsComponent implements OnInit {
     }).sort((a, b) => DAY_ORDER[a.dayOfWeek] - DAY_ORDER[b.dayOfWeek]);
   }
 
-  // --- Überschneidungs-Check ---
   private toMinutes(time: string): number {
     const [h, m] = time.split(':').map(Number);
     return h * 60 + m;
@@ -361,9 +359,9 @@ export class DoctorSettingsComponent implements OnInit {
         this.scheduleForm.reset();
         this.loadMySchedule();
       },
-      error: (err: { error: { error: string } }) => {
+      error: (err: { error: { message: string } }) => {
         this.isSavingSchedule = false;
-        this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.error || 'Fehler beim Speichern.' });
+        this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Fehler beim Speichern.' });
       }
     });
   }
@@ -430,7 +428,6 @@ export class DoctorSettingsComponent implements OnInit {
     const sourceShifts = this.mySchedule.filter(s => s.dayOfWeek === this.copySourceDay);
     if (sourceShifts.length === 0) return;
 
-    // Nur Tage kopieren, wo keine Überschneidung entsteht
     const validTargets = this.copyTargetDays.filter(day =>
       sourceShifts.every(shift => !this.hasOverlap(day, shift.startTime.substring(0, 5), shift.endTime.substring(0, 5), null))
     );
