@@ -51,10 +51,10 @@ export class Login {
     if (this.loginForm.invalid) return;
     this.authService.login(this.loginForm.value).subscribe({
       next: (response: ApiResponse) => {
-        localStorage.setItem('jwt_token', response.token!);
-        this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Login erfolgreich!'});
-        this.router.navigate(['/dashboard']);
-      },
+  localStorage.setItem('jwt_token', response.token!);
+  this.messageService.add({ severity: 'success', summary: 'Erfolg', detail: 'Login erfolgreich!' });
+  this.router.navigate([response.role === 'ROLE_ADMIN' ? '/admin' : '/dashboard']);
+},
       error: (err: HttpErrorResponse) => {
         this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Login fehlgeschlagen.'});
       },
