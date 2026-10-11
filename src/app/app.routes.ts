@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { Login } from './features/auth/login/login';
 import { DashboardComponent } from './features/dashboard/dashboard';
-import { authGuard } from './core/guards/auth-guard';
+import { roleGuard } from './core/guards/role-guard';
 import { RegisterComponent } from './features/auth/register/register';
 import { VerifyComponent } from './features/auth/verify/verify';
 import { ForgotPasswordComponent } from './features/auth/forgot-password/forgot-password';
@@ -14,7 +14,16 @@ export const routes: Routes = [
   { path: 'verify', component: VerifyComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent }, // <-- HIER
   { path: 'reset-password', component: ResetPasswordComponent },   // <-- HIER
-  { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
+  {
+  path: 'dashboard',
+  component: DashboardComponent,
+  canActivate: [roleGuard('ROLE_DOCTOR', 'ROLE_PATIENT')]
+},
+{
+  path: 'admin',
+  loadComponent: () => import('./features/admin/admin').then(m => m.AdminComponent),
+  canActivate: [roleGuard('ROLE_ADMIN')]
+},
   { path: '', redirectTo: '/login', pathMatch: 'full' },{
   path: 'impressum',
   loadComponent: () => import('./features/legal/impressum/impressum').then(m => m.ImpressumComponent)
