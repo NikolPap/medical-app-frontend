@@ -45,3 +45,13 @@ export interface DoctorInfo {
   address: string;  
   slotDuration?: number;
 }
+
+export interface PendingDoctor {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  specialty: string;
+  address: string;
+  phoneNumber: string;
+}
