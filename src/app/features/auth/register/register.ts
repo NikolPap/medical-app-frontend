@@ -150,10 +150,18 @@ export class RegisterComponent {
     }
 
     this.authService.register(this.registerForm.value).subscribe({
-      next: () => {
-        this.messageService.add({ severity: 'success', summary: 'Registriert', detail: 'Bitte prüfe deine E-Mails für den 6-stelligen Code.', life: 5000 });
-        this.router.navigate(['/verify']);
-      },
+     next: () => {
+  const isDoctor = this.registerForm.value.role === 'ROLE_DOCTOR';
+  this.messageService.add({
+    severity: 'success',
+    summary: 'Registriert',
+    detail: isDoctor
+      ? 'Bitte bestätige deine E-Mail. Danach prüfen wir dein Arztkonto und melden uns per E-Mail.'
+      : 'Bitte prüfe deine E-Mails für den 6-stelligen Code.',
+    life: 6000
+  });
+  this.router.navigate(['/verify']);
+},
       error: (err: HttpErrorResponse) => {
         this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Registrierung fehlgeschlagen.' });
       }
