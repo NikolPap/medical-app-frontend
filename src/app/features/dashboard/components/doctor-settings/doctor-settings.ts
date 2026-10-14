@@ -339,22 +339,15 @@ export class DoctorSettingsComponent implements OnInit {
     const requestData = { dayOfWeek, startTime, endTime };
     this.isSavingSchedule = true;
 
-    if (this.editingScheduleId !== null) {
-      this.scheduleService.deleteSchedule(this.editingScheduleId).subscribe({
-        next: () => {
-          this.editingScheduleId = null;
-          this.sendSaveRequest(requestData);
-        }
-      });
-    } else {
-      this.sendSaveRequest(requestData);
-    }
-  }
+    // Εδώ είναι η νέα λογική: Χρησιμοποιούμε update αν υπάρχει ID, αλλιώς save
+    const request$ = this.editingScheduleId !== null
+      ? this.scheduleService.updateSchedule(this.editingScheduleId, requestData)
+      : this.scheduleService.saveSchedule(requestData);
 
-  private sendSaveRequest(requestData: { dayOfWeek: string, startTime: string, endTime: string }) {
-    this.scheduleService.saveSchedule(requestData).subscribe({
+    request$.subscribe({
       next: () => {
         this.isSavingSchedule = false;
+        this.editingScheduleId = null;
         this.messageService.add({ severity: 'success', summary: 'Erfolg', detail: 'Arbeitszeit gespeichert!' });
         this.scheduleForm.reset();
         this.loadMySchedule();
