@@ -42,4 +42,8 @@ export class AppointmentService {
   blockEntireDay(date: string): Observable<ApiResponse> {
     return this.http.post<ApiResponse>(`${this.API_URL}/block-day?date=${date}`, {});
   }
+
+  rescheduleAppointment(id: number, data: { appointmentDate: string; appointmentTime: string }): Observable<Appointment> {
+  return this.http.put<Appointment>(`${this.API_URL}/${id}/reschedule`, data);
+}
 }
