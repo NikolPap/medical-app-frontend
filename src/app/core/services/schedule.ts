@@ -27,4 +27,8 @@ export class ScheduleService {
   updateSlotDuration(minutes: number): Observable<ApiResponse> {
     return this.http.put<ApiResponse>(`${this.API_URL}/duration?minutes=${minutes}`, {});
   }
+
+  updateSchedule(id: number, scheduleData: unknown): Observable<ApiResponse> {
+  return this.http.put<ApiResponse>(`${this.API_URL}/${id}`, scheduleData);
+}
 }
