@@ -87,13 +87,17 @@ export class BookAppointmentComponent implements OnInit {
     this.showDialog = true;
   }
 
+  private formatDate(raw: Date): string {
+    const d = new Date(raw);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
   loadAvailableSlots() {
     const doctorId = this.newAppointmentForm.value.doctorId;
     const rawDate = this.newAppointmentForm.value.appointmentDate;
 
     if (doctorId && rawDate) {
-      const d = new Date(rawDate);
-      const formattedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const formattedDate = this.formatDate(rawDate);
 
       this.isLoadingSlots = true;
       this.availableSlots = [];
@@ -121,42 +125,37 @@ export class BookAppointmentComponent implements OnInit {
   bookAppointment() {
     if (this.newAppointmentForm.invalid) return;
 
-    const rawDate = this.newAppointmentForm.value.appointmentDate;
-    const dateObj = new Date(rawDate);
-    const formattedDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
-
-    const requestData = {
-      doctorId: this.newAppointmentForm.value.doctorId,
-      appointmentDate: formattedDate,
-      appointmentTime: this.newAppointmentForm.value.appointmentTime,
-      patientEmail: this.patientEmailToReschedule
-    };
+    const { doctorId, appointmentDate, appointmentTime } = this.newAppointmentForm.value;
+    const formattedDate = this.formatDate(appointmentDate);
 
     this.isBooking = true;
 
-    this.appointmentService.createAppointment(requestData).subscribe({
-      next: (response: any) => {
-        if (this.oldAppointmentIdToCancel !== null) {
-          this.appointmentService.updateAppointmentStatus(this.oldAppointmentIdToCancel, 'CANCELLED').subscribe({
-            next: () => {
-              if (this.userRole === 'ROLE_DOCTOR') {
-                this.appointmentService.updateAppointmentStatus(response.id, 'CONFIRMED').subscribe({
-                  next: () => this.finishBooking('Termin erfolgreich verschoben und bestätigt!')
-                });
-              } else {
-                this.finishBooking('Termin erfolgreich verschoben! Wartet auf Bestätigung.');
-              }
-            }
-          });
-        } else {
-          this.finishBooking('Termin wurde erfolgreich gebucht!');
-        }
-      },
-      error: (err: HttpErrorResponse) => {
-        this.isBooking = false;
-        this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Termin konnte nicht gebucht werden.' });
-      }
-    });
+    // VERSCHIEBEN: ein einziger atomarer Request
+    if (this.oldAppointmentIdToCancel !== null) {
+      this.appointmentService
+        .rescheduleAppointment(this.oldAppointmentIdToCancel, { appointmentDate: formattedDate, appointmentTime })
+        .subscribe({
+          next: () => this.finishBooking(
+            this.userRole === 'ROLE_DOCTOR'
+              ? 'Termin erfolgreich verschoben und bestätigt!'
+              : 'Termin erfolgreich verschoben! Wartet auf Bestätigung.'),
+          error: (err: HttpErrorResponse) => this.handleBookingError(err, 'Termin konnte nicht verschoben werden.')
+        });
+      return;
+    }
+
+    // NEU BUCHEN
+    this.appointmentService
+      .createAppointment({ doctorId, appointmentDate: formattedDate, appointmentTime, patientEmail: this.patientEmailToReschedule })
+      .subscribe({
+        next: () => this.finishBooking('Termin wurde erfolgreich gebucht!'),
+        error: (err: HttpErrorResponse) => this.handleBookingError(err, 'Termin konnte nicht gebucht werden.')
+      });
+  }
+
+  private handleBookingError(err: HttpErrorResponse, fallback: string) {
+    this.isBooking = false;
+    this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.message || fallback });
   }
 
   private finishBooking(successMessage: string) {
