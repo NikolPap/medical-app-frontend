@@ -1,59 +1,56 @@
-# MedicalAppFrontend
+# MedSync – Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.23.
+![CI](https://github.com/NikolPap/medical-app-frontend/actions/workflows/ci.yml/badge.svg)
 
-## Development server
+Angular-Frontend für die Terminverwaltung von Arztpraxen.
+Backend: [medical-app-backend](https://github.com/NikolPap/medical-app-backend)
 
-To start a local development server, run:
+> **Demo-Projekt.** Keine echten Patientendaten eingeben.
 
-```bash
-ng serve
-```
+## Screenshots
+<!-- Hier 3–4 Screenshots oder ein GIF einfügen: Login, Patienten-Dashboard, Terminbuchung, Arzt-Dashboard, Admin-Freischaltung -->
+![Dashboard](docs/dashboard.png)
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Features
+- Rollenbasierte Oberflächen: Patient, Arzt, Admin (Role-Guards)
+- Terminbuchung mit Live-Verfügbarkeit: freie Slots kommen direkt aus der Backend-Engine
+- Verschieben und Stornieren (48-Stunden-Regel wird im UI berücksichtigt)
+- Arzt: Arbeitszeiten, Urlaubsverwaltung, Terminbestätigung
+- Admin: Freischaltung neuer Ärzte
+- Registrierung mit E-Mail-Verifizierung, Passwort-Reset
+- Responsive Design (Sidebar auf Desktop, Bottom-Navigation auf Mobil)
+- Eigenes Design-System (Tailwind): Ink Teal, Cool Paper, Warm Brass; Fraunces und Inter
 
-## Code scaffolding
+## Tech-Stack
+Angular 21 (Standalone Components) · TypeScript · RxJS · Tailwind CSS · PrimeNG ·
+JWT-Interceptor und Guards · Docker/nginx · GitHub Actions
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Architektur
+- Smart/Dumb-Components: `DashboardComponent` hält den State, kleine Komponenten
+  (`AppointmentRow`, `SummaryCards`, ...) bekommen nur `@Input`/`@Output`
+- Wiederverwendbare Pipes für Status-Label und -Farben
+- `core/` (Services, Guards, Interceptor, Models), `features/` (auth, dashboard, admin, legal), `shared/`
 
-```bash
-ng generate component component-name
-```
+## Starten
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+Voraussetzung: Backend läuft auf `http://localhost:8080`
+([Anleitung](https://github.com/NikolPap/medical-app-backend#starten)).
 
 ```bash
-ng test
+npm ci --legacy-peer-deps
+npm start            # http://localhost:4200
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
+Mit Docker:
 ```bash
-ng e2e
+docker build -t medsync-frontend .
+docker run --rm -p 4200:80 medsync-frontend
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Frontend und Backend zusammen: `docker compose -f docker-compose.full.yml up --build`
+im Backend-Repo (beide Repos in benachbarten Ordnern).
 
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## Entscheidungen
+- **Smart/Dumb-Split:** Das Dashboard-Template schrumpfte von ~450 auf ~55 Zeilen.
+- **Token im localStorage:** einfach für eine SPA; bekanntes XSS-Risiko, Alternative wäre ein httpOnly-Cookie.
+- **Role-Guard prüft auch `exp`:** abgelaufene Tokens führen zum Login statt zu 401-Fehlern.
