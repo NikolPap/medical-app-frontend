@@ -5,13 +5,13 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
 import { MessageService } from 'primeng/api';
 import { HttpErrorResponse } from '@angular/common/http';
-
+ 
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
-import { DropdownModule } from 'primeng/dropdown';
+import { SelectModule } from 'primeng/select';
 import { LegalFooterComponent } from '../../../shared/legal-footer/legal-footer';
-
+ 
 export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const password = control.get('password');
   const confirmPassword = control.get('confirmPassword');
@@ -20,40 +20,40 @@ export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): V
   }
   return null;
 };
-
+ 
 // Erlaubt: +49 123 456789, 0049-123-456789, 0176/12345678 usw. — mind. 6 Ziffern gesamt
 const PHONE_PATTERN = /^\+?[0-9\s\-\/]{6,20}$/;
-
+ 
 @Component({
   selector: 'app-register',
   standalone: true,
   imports: [
     CommonModule, ReactiveFormsModule, RouterModule, InputTextModule,
-    PasswordModule, ButtonModule, DropdownModule, LegalFooterComponent
+    PasswordModule, ButtonModule, SelectModule, LegalFooterComponent
   ],
   templateUrl: './register.html'
 })
 export class RegisterComponent {
-
+ 
   registerForm: FormGroup;
   currentStep: number = 1;
-
+ 
   roles = [
     { label: 'Ich bin Patient', value: 'ROLE_PATIENT' },
     { label: 'Ich bin Arzt', value: 'ROLE_DOCTOR' }
   ];
-
+ 
   genderOptions = [
     { label: 'Männlich', value: 'MALE' },
     { label: 'Weiblich', value: 'FEMALE' },
     { label: 'Divers', value: 'DIVERS' }
   ];
-
+ 
   insuranceOptions = [
     { label: 'Gesetzlich versichert', value: 'GESETZLICH' },
     { label: 'Privat versichert', value: 'PRIVATE' }
   ];
-
+ 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
@@ -65,32 +65,32 @@ export class RegisterComponent {
       firstName: ['', [Validators.required, Validators.minLength(2)]],
       lastName: ['', [Validators.required, Validators.minLength(2)]],
       phoneNumber: ['', [Validators.required, Validators.pattern(PHONE_PATTERN)]],
-
+ 
       gender: [''],
       insuranceType: [''],
-
+ 
       specialty: [''],
       address: [''],
-
+ 
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6), Validators.pattern('(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{6,}')]],
       confirmPassword: ['', Validators.required],
-
+ 
       acceptedTerms: [false, Validators.requiredTrue]
-
+ 
     }, { validators: passwordMatchValidator });
-
+ 
     // Rollenabhängige Pflichtfelder — reagiert sofort auf jeden Rollenwechsel
     this.registerForm.get('role')?.valueChanges.subscribe((role: string) => this.applyRoleValidators(role));
     this.applyRoleValidators(this.registerForm.get('role')?.value); // initial anwenden
   }
-
+ 
   private applyRoleValidators(role: string) {
     const specialty = this.registerForm.get('specialty');
     const address = this.registerForm.get('address');
     const gender = this.registerForm.get('gender');
     const insuranceType = this.registerForm.get('insuranceType');
-
+ 
     if (role === 'ROLE_DOCTOR') {
       specialty?.setValidators([Validators.required]);
       address?.setValidators([Validators.required]);
@@ -102,28 +102,28 @@ export class RegisterComponent {
       specialty?.clearValidators();
       address?.clearValidators();
     }
-
+ 
     specialty?.updateValueAndValidity({ emitEvent: false });
     address?.updateValueAndValidity({ emitEvent: false });
     gender?.updateValueAndValidity({ emitEvent: false });
     insuranceType?.updateValueAndValidity({ emitEvent: false });
   }
-
+ 
   isStep1Valid(): boolean {
     const base = this.registerForm.get('role');
     const firstName = this.registerForm.get('firstName');
     const lastName = this.registerForm.get('lastName');
     const phone = this.registerForm.get('phoneNumber');
-
+ 
     const isBaseValid = base?.valid && firstName?.valid && lastName?.valid && phone?.valid;
-
+ 
     if (this.registerForm.get('role')?.value === 'ROLE_DOCTOR') {
       return !!isBaseValid && !!this.registerForm.get('specialty')?.valid && !!this.registerForm.get('address')?.valid;
     } else {
       return !!isBaseValid && !!this.registerForm.get('gender')?.valid && !!this.registerForm.get('insuranceType')?.valid;
     }
   }
-
+ 
   nextStep() {
     if (this.isStep1Valid()) {
       this.currentStep = 2;
@@ -138,17 +138,17 @@ export class RegisterComponent {
       this.registerForm.get('insuranceType')?.markAsTouched();
     }
   }
-
+ 
   prevStep() {
     this.currentStep = 1;
   }
-
+ 
   onSubmit() {
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
       return;
     }
-
+ 
     this.authService.register(this.registerForm.value).subscribe({
      next: () => {
   const isDoctor = this.registerForm.value.role === 'ROLE_DOCTOR';
