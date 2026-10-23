@@ -63,7 +63,7 @@
             <form [formGroup]="registerForm" class="flex flex-col gap-6">
               <div class="flex flex-col gap-2">
                 <label class="font-medium text-ink-teal">Ich bin...</label>
-                <p-dropdown [options]="roles" formControlName="role" optionLabel="label" optionValue="value" styleClass="w-full rounded-xl border-gray-200" inputStyleClass="p-4"></p-dropdown>
+                <p-select [options]="roles" formControlName="role" optionLabel="label" optionValue="value" styleClass="w-full h-[56px] rounded-xl border-gray-200"></p-select>
               </div>
 
               <div class="flex gap-4">
@@ -97,14 +97,14 @@
               <ng-container *ngIf="registerForm.get('role')?.value === 'ROLE_PATIENT'">
                 <div class="flex flex-col gap-2">
                   <label class="font-medium text-ink-teal">Geschlecht</label>
-                  <p-dropdown [options]="genderOptions" formControlName="gender" placeholder="Bitte wählen" optionLabel="label" optionValue="value" styleClass="w-full rounded-xl border-gray-200" inputStyleClass="p-4"></p-dropdown>
+                  <p-select [options]="genderOptions" formControlName="gender" placeholder="Bitte wählen" optionLabel="label" optionValue="value" styleClass="w-full h-[56px] rounded-xl border-gray-200"></p-select>
                   <small *ngIf="registerForm.get('gender')?.invalid && registerForm.get('gender')?.touched" class="text-status-brick font-bold">
                     Bitte wähle dein Geschlecht.
                   </small>
                 </div>
                 <div class="flex flex-col gap-2">
                   <label class="font-medium text-ink-teal">Versicherungsart</label>
-                  <p-dropdown [options]="insuranceOptions" formControlName="insuranceType" placeholder="Bitte wählen" optionLabel="label" optionValue="value" styleClass="w-full rounded-xl border-gray-200" inputStyleClass="p-4"></p-dropdown>
+                  <p-select [options]="insuranceOptions" formControlName="insuranceType" placeholder="Bitte wählen" optionLabel="label" optionValue="value" styleClass="w-full h-[56px] rounded-xl border-gray-200"></p-select>
                   <small *ngIf="registerForm.get('insuranceType')?.invalid && registerForm.get('insuranceType')?.touched" class="text-status-brick font-bold">
                     Bitte wähle deine Versicherungsart.
                   </small>
