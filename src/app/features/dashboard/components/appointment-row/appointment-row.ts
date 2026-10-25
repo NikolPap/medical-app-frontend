@@ -1,40 +1,39 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, computed, input, output } from '@angular/core';
+import { DatePipe, NgClass } from '@angular/common';
 import { AvatarModule } from 'primeng/avatar';
 import { Appointment } from '../../../../core/models/appointment.model';
-import { StatusLabelPipe, StatusDotClassPipe,StatusTextClassPipe, IsBlockedDayPipe, InitialPipe, isBlockedDay} from '../../../../core/pipes/appointment-status-pipe';
+import {
+  StatusLabelPipe, StatusDotClassPipe, StatusTextClassPipe, InitialPipe, isBlockedDay
+} from '../../../../core/pipes/appointment-status-pipe';
 
 @Component({
   selector: 'app-appointment-row',
   standalone: true,
-  imports: [CommonModule, AvatarModule, StatusLabelPipe, StatusDotClassPipe, StatusTextClassPipe, IsBlockedDayPipe, InitialPipe],
+  imports: [NgClass, DatePipe, AvatarModule, StatusLabelPipe, StatusDotClassPipe, StatusTextClassPipe, InitialPipe],
   templateUrl: './appointment-row.html'
 })
 export class AppointmentRowComponent {
-  @Input({ required: true }) appt!: Appointment;
-  @Input() mode: 'compact' | 'full' = 'full';
+  readonly appt = input.required<Appointment>();
+  readonly mode = input<'compact' | 'full'>('full');
 
-  @Output() rowClick = new EventEmitter<Appointment>();
-  @Output() confirm = new EventEmitter<Appointment>();
-  @Output() cancel = new EventEmitter<Appointment>();
+  readonly rowClick = output<Appointment>();
+  readonly confirm = output<Appointment>();
+  readonly cancel = output<Appointment>();
 
-  // ΝΕΟ: getter αντί για pipe μέσα στο (click)
-  get isBlocked(): boolean {
-    return isBlockedDay(this.appt);
+  readonly isBlocked = computed(() => isBlockedDay(this.appt()));
+
+  onRowClick(): void {
+    if (this.isBlocked()) return;
+    this.rowClick.emit(this.appt());
   }
 
-  onRowClick() {
-    if (this.isBlocked) return;
-    this.rowClick.emit(this.appt);
-  }
-
-  onConfirm(event: Event) {
+  onConfirm(event: Event): void {
     event.stopPropagation();
-    this.confirm.emit(this.appt);
+    this.confirm.emit(this.appt());
   }
 
-  onCancel(event: Event) {
+  onCancel(event: Event): void {
     event.stopPropagation();
-    this.cancel.emit(this.appt);
+    this.cancel.emit(this.appt());
   }
 }
