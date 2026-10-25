@@ -1,22 +1,22 @@
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mb-4 sm:mb-8 w-full flex-shrink-0">
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 flex flex-col justify-between hover:shadow-md transition-all cursor-pointer relative overflow-hidden group" [ngClass]="{ 'ring-2 ring-status-ochre': currentFilter === 'PENDING' }" (click)="filterChange.emit('PENDING')">
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 flex flex-col justify-between hover:shadow-md transition-all cursor-pointer relative overflow-hidden group" [ngClass]="{ 'ring-2 ring-status-ochre': currentFilter() === 'PENDING' }" (click)="filterChange.emit('PENDING')">
     <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-status-ochre opacity-50 group-hover:opacity-100 transition-opacity"></div>
     <p class="text-xs sm:text-sm font-medium text-gray-500 pl-2 sm:pl-3">Ausstehend</p>
-    <h3 class="text-2xl sm:text-4xl font-serif font-bold text-ink-teal mt-2 pl-2 sm:pl-3">{{ counts.pending }}</h3>
+    <h3 class="text-2xl sm:text-4xl font-serif font-bold text-ink-teal mt-2 pl-2 sm:pl-3">{{ counts().pending }}</h3>
   </div>
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 flex flex-col justify-between hover:shadow-md transition-all cursor-pointer relative overflow-hidden group" [ngClass]="{ 'ring-2 ring-status-sage': currentFilter === 'CONFIRMED' }" (click)="filterChange.emit('CONFIRMED')">
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 flex flex-col justify-between hover:shadow-md transition-all cursor-pointer relative overflow-hidden group" [ngClass]="{ 'ring-2 ring-status-sage': currentFilter() === 'CONFIRMED' }" (click)="filterChange.emit('CONFIRMED')">
     <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-status-sage opacity-50 group-hover:opacity-100 transition-opacity"></div>
     <p class="text-xs sm:text-sm font-medium text-gray-500 pl-2 sm:pl-3">Bestätigt</p>
-    <h3 class="text-2xl sm:text-4xl font-serif font-bold text-ink-teal mt-2 pl-2 sm:pl-3">{{ counts.confirmed }}</h3>
+    <h3 class="text-2xl sm:text-4xl font-serif font-bold text-ink-teal mt-2 pl-2 sm:pl-3">{{ counts().confirmed }}</h3>
   </div>
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 flex flex-col justify-between hover:shadow-md transition-all cursor-pointer relative overflow-hidden group" [ngClass]="{ 'ring-2 ring-status-brick': currentFilter === 'CANCELLED' }" (click)="filterChange.emit('CANCELLED')">
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 flex flex-col justify-between hover:shadow-md transition-all cursor-pointer relative overflow-hidden group" [ngClass]="{ 'ring-2 ring-status-brick': currentFilter() === 'CANCELLED' }" (click)="filterChange.emit('CANCELLED')">
     <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-status-brick opacity-50 group-hover:opacity-100 transition-opacity"></div>
     <p class="text-xs sm:text-sm font-medium text-gray-500 pl-2 sm:pl-3">Storniert</p>
-    <h3 class="text-2xl sm:text-4xl font-serif font-bold text-ink-teal mt-2 pl-2 sm:pl-3">{{ counts.cancelled }}</h3>
+    <h3 class="text-2xl sm:text-4xl font-serif font-bold text-ink-teal mt-2 pl-2 sm:pl-3">{{ counts().cancelled }}</h3>
   </div>
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 flex flex-col justify-between hover:shadow-md transition-all cursor-pointer relative overflow-hidden group" [ngClass]="{ 'ring-2 ring-ink-teal': currentFilter === 'ALL' }" (click)="filterChange.emit('ALL')">
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 flex flex-col justify-between hover:shadow-md transition-all cursor-pointer relative overflow-hidden group" [ngClass]="{ 'ring-2 ring-ink-teal': currentFilter() === 'ALL' }" (click)="filterChange.emit('ALL')">
     <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-gray-400 opacity-50 group-hover:opacity-100 transition-opacity"></div>
     <p class="text-xs sm:text-sm font-medium text-gray-500 pl-2 sm:pl-3">Alle Termine</p>
-    <h3 class="text-2xl sm:text-4xl font-serif font-bold text-ink-teal mt-2 pl-2 sm:pl-3">{{ counts.all }}</h3>
+    <h3 class="text-2xl sm:text-4xl font-serif font-bold text-ink-teal mt-2 pl-2 sm:pl-3">{{ counts().all }}</h3>
   </div>
 </div>
