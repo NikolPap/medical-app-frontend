@@ -1,9 +1,9 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { MessageService } from 'primeng/api';
+
 import { AppointmentService } from '../../core/services/appointment';
 import { Appointment } from '../../core/models/appointment.model';
-import { Router } from '@angular/router';
-import { MessageService } from 'primeng/api';
 
 import { BookAppointmentComponent } from './components/book-appointment/book-appointment';
 import { DoctorSettingsComponent } from './components/doctor-settings/doctor-settings';
@@ -16,11 +16,20 @@ import { DoctorAppointmentListComponent, AppointmentGroup } from './components/d
 import { PatientHistoryListComponent } from './components/patient-history-list/patient-history-list';
 import { AppointmentDetailDialogComponent } from './components/appointment-detail-dialog/appointment-detail-dialog';
 
+type DoctorView = 'CURRENT' | 'PAST' | 'CANCELLED';
+type HistoryView = 'UPCOMING' | 'PAST';
+
+const ITEMS_PER_PAGE = 5;
+
+const byDateAsc = (a: Appointment, b: Appointment) =>
+  new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime();
+
+const byDateDesc = (a: Appointment, b: Appointment) => byDateAsc(b, a);
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [
-    CommonModule,
     BookAppointmentComponent, DoctorSettingsComponent,
     AppSidebarComponent, AppBottomNavComponent, DashboardHeaderComponent,
     SummaryCardsComponent, TodayAppointmentsComponent,
@@ -30,206 +39,229 @@ import { AppointmentDetailDialogComponent } from './components/appointment-detai
   templateUrl: './dashboard.html'
 })
 export class DashboardComponent implements OnInit {
+  private readonly appointmentService = inject(AppointmentService);
+  private readonly messageService = inject(MessageService);
 
-  @ViewChild('bookAppointmentModal') bookAppointmentModal!: BookAppointmentComponent;
-  @ViewChild('doctorSettingsModal') doctorSettingsModal!: DoctorSettingsComponent;
+  readonly bookAppointmentModal = viewChild.required<BookAppointmentComponent>('bookAppointmentModal');
+  readonly doctorSettingsModal = viewChild.required<DoctorSettingsComponent>('doctorSettingsModal');
 
-  appointments: Appointment[] = [];
-  filteredAppointments: Appointment[] = [];
-  isLoading: boolean = true;
+  // ==== STATE ====
+  readonly appointments = signal<Appointment[]>([]);
+  readonly isLoading = signal(true);
 
-  userRole: string = '';
-  userEmail: string = '';
-  minDate: Date = new Date();
+  readonly userRole = signal('');
+  readonly userEmail = signal('');
+  readonly minDate = new Date();
 
-  currentPage: number = 1;
-  itemsPerPage: number = 5;
+  readonly currentPage = signal(1);
+  readonly currentFilter = signal('ALL');
+  readonly doctorView = signal<DoctorView>('CURRENT');
+  readonly historyView = signal<HistoryView>('UPCOMING');
 
-  currentFilter: string = 'ALL';
-  doctorView: 'CURRENT' | 'PAST' | 'CANCELLED' = 'CURRENT';
-  historyView: 'UPCOMING' | 'PAST' = 'UPCOMING';
+  readonly showStatusDialog = signal(false);
+  readonly selectedAppointment = signal<Appointment | null>(null);
+  readonly showCancelConfirm = signal(false);
+  readonly isSubmitting = signal(false);
 
-  groupedDoctorAppointments: AppointmentGroup[] = [];
+  // ==== ABGELEITETE WERTE ====
+  /** Urlaubstage, die storniert wurden, werden nirgends angezeigt */
+  private readonly validAppointments = computed(() =>
+    this.appointments().filter(a => !(a.patientEmail === a.doctorEmail && a.status === 'CANCELLED'))
+  );
 
-  showStatusDialog: boolean = false;
-  selectedAppointment: Appointment | null = null;
-  showCancelConfirm: boolean = false;
-  isSubmitting: boolean = false;
+  readonly todaysAppointments = computed(() => {
+    const today = new Date();
+    return this.appointments().filter(a => {
+      const d = new Date(a.appointmentDate);
+      return d.getDate() === today.getDate()
+        && d.getMonth() === today.getMonth()
+        && d.getFullYear() === today.getFullYear()
+        && a.status === 'CONFIRMED'
+        && a.patientEmail !== a.doctorEmail;
+    });
+  });
 
-  constructor(
-    private appointmentService: AppointmentService,
-    private messageService: MessageService,
-    private router: Router
-  ) {}
+  readonly pendingAppointmentsCount = computed(() =>
+    this.appointments().filter(a => a.status === 'PENDING').length
+  );
 
+  private readonly doctorAppointments = computed(() => {
+    const now = new Date();
+    const view = this.doctorView();
+    let list = this.validAppointments();
+
+    if (this.currentFilter() === 'PENDING') {
+      list = list.filter(a => a.status === 'PENDING');
+    } else if (view === 'CURRENT') {
+      list = list.filter(a => new Date(a.appointmentDate) >= now && a.status !== 'CANCELLED');
+    } else if (view === 'PAST') {
+      list = list.filter(a => new Date(a.appointmentDate) < now && a.status !== 'CANCELLED');
+    } else {
+      list = list.filter(a => a.status === 'CANCELLED');
+    }
+
+    return [...list].sort(byDateAsc);
+  });
+
+  private readonly patientAppointments = computed(() => {
+    const now = new Date();
+    const upcoming = this.historyView() === 'UPCOMING';
+    let list = this.validAppointments().filter(a =>
+      upcoming ? new Date(a.appointmentDate) >= now : new Date(a.appointmentDate) < now
+    );
+
+    list = [...list].sort(upcoming ? byDateAsc : byDateDesc);
+
+    const filter = this.currentFilter();
+    return filter === 'ALL' ? list : list.filter(a => a.status === filter);
+  });
+
+  readonly filteredAppointments = computed(() =>
+    this.userRole() === 'ROLE_DOCTOR' ? this.doctorAppointments() : this.patientAppointments()
+  );
+
+  readonly groupedDoctorAppointments = computed<AppointmentGroup[]>(() => {
+    const groups = new Map<string, Appointment[]>();
+    for (const appt of this.doctorAppointments()) {
+      const label = new Date(appt.appointmentDate).toLocaleDateString('de-DE', {
+        weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
+      });
+      if (!groups.has(label)) groups.set(label, []);
+      groups.get(label)!.push(appt);
+    }
+    return Array.from(groups.entries()).map(([label, items]) => ({ label, items }));
+  });
+
+  readonly summaryCounts = computed<SummaryCounts>(() => {
+    const now = new Date();
+    const upcoming = this.validAppointments().filter(a => new Date(a.appointmentDate) >= now);
+    return {
+      pending: upcoming.filter(a => a.status === 'PENDING').length,
+      confirmed: upcoming.filter(a => a.status === 'CONFIRMED').length,
+      cancelled: upcoming.filter(a => a.status === 'CANCELLED').length,
+      all: upcoming.length
+    };
+  });
+
+  readonly totalPages = computed(() => Math.ceil(this.filteredAppointments().length / ITEMS_PER_PAGE));
+
+  readonly paginatedAppointments = computed(() => {
+    const start = (this.currentPage() - 1) * ITEMS_PER_PAGE;
+    return this.filteredAppointments().slice(start, start + ITEMS_PER_PAGE);
+  });
+
+  // ==== LIFECYCLE ====
   ngOnInit(): void {
     const token = localStorage.getItem('jwt_token');
     if (token) {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      this.userRole = payload.role;
-      this.userEmail = payload.sub;
+      this.userRole.set(payload.role);
+      this.userEmail.set(payload.sub);
     }
     this.loadAppointments();
   }
 
-  loadAppointments() {
-    this.isLoading = true;
+  loadAppointments(): void {
+    this.isLoading.set(true);
     this.appointmentService.getMyAppointments().subscribe({
       next: (data: Appointment[]) => {
-        this.appointments = data;
-        if (this.userRole === 'ROLE_DOCTOR') this.updateDoctorView();
-        else this.updatePatientView();
-        this.isLoading = false;
+        this.appointments.set(data);
+        this.isLoading.set(false);
       },
-      error: (err: any) => { console.error('Fehler beim Laden:', err); this.isLoading = false; }
+      error: (err: HttpErrorResponse) => {
+        console.error('Fehler beim Laden:', err);
+        this.isLoading.set(false);
+      }
     });
   }
 
   // ==== ARZT ====
-  get todaysAppointments(): Appointment[] {
-    const today = new Date();
-    return this.appointments.filter(a => {
-      const d = new Date(a.appointmentDate);
-      return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()
-        && a.status === 'CONFIRMED' && a.patientEmail !== a.doctorEmail;
-    });
+  setDoctorView(view: DoctorView): void {
+    this.doctorView.set(view);
+    this.currentFilter.set('ALL');
   }
 
-  get pendingAppointmentsCount(): number {
-    return this.appointments.filter(a => a.status === 'PENDING').length;
+  showPendingOnly(): void { this.currentFilter.set('PENDING'); }
+  resetDoctorFilter(): void { this.currentFilter.set('ALL'); }
+
+  // ==== PATIENT ====
+  applyFilter(filterType: string): void {
+    this.currentFilter.set(filterType);
+    this.currentPage.set(1);
   }
 
-  setDoctorView(view: 'CURRENT' | 'PAST' | 'CANCELLED') {
-    this.doctorView = view;
-    this.currentFilter = 'ALL';
-    this.updateDoctorView();
+  setHistoryView(view: HistoryView): void {
+    this.historyView.set(view);
+    this.currentPage.set(1);
   }
 
-  showPendingOnly() { this.currentFilter = 'PENDING'; this.updateDoctorView(); }
-  resetDoctorFilter() { this.currentFilter = 'ALL'; this.updateDoctorView(); }
-
-  updateDoctorView() {
-    const now = new Date();
-    let valid = this.appointments.filter(a => !(a.patientEmail === a.doctorEmail && a.status === 'CANCELLED'));
-
-    if (this.currentFilter === 'PENDING') {
-      valid = valid.filter(a => a.status === 'PENDING');
-    } else if (this.doctorView === 'CURRENT') {
-      valid = valid.filter(a => new Date(a.appointmentDate) >= now && a.status !== 'CANCELLED');
-    } else if (this.doctorView === 'PAST') {
-      valid = valid.filter(a => new Date(a.appointmentDate) < now && a.status !== 'CANCELLED');
-    } else if (this.doctorView === 'CANCELLED') {
-      valid = valid.filter(a => a.status === 'CANCELLED');
-    }
-
-    valid.sort((a, b) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime());
-    this.filteredAppointments = valid;
-
-    const groups = new Map<string, Appointment[]>();
-    valid.forEach(a => {
-      const label = new Date(a.appointmentDate).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-      if (!groups.has(label)) groups.set(label, []);
-      groups.get(label)!.push(a);
-    });
-    this.groupedDoctorAppointments = Array.from(groups.entries()).map(([label, items]) => ({ label, items }));
+  nextPage(): void {
+    if (this.currentPage() < this.totalPages()) this.currentPage.update(p => p + 1);
   }
 
-  // ==== ASTHENIS ====
-  applyFilter(filterType: string) { this.currentFilter = filterType; this.currentPage = 1; this.updatePatientView(); }
-  setHistoryView(view: 'UPCOMING' | 'PAST') { this.historyView = view; this.currentPage = 1; this.updatePatientView(); }
-
-  updatePatientView() {
-    const now = new Date();
-    let valid = this.appointments.filter(a => !(a.patientEmail === a.doctorEmail && a.status === 'CANCELLED'));
-
-    if (this.historyView === 'UPCOMING') {
-      valid = valid.filter(a => new Date(a.appointmentDate) >= now);
-      valid.sort((a, b) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime());
-    } else {
-      valid = valid.filter(a => new Date(a.appointmentDate) < now);
-      valid.sort((a, b) => new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime());
-    }
-
-    if (this.currentFilter !== 'ALL') valid = valid.filter(a => a.status === this.currentFilter);
-    this.filteredAppointments = valid;
+  prevPage(): void {
+    if (this.currentPage() > 1) this.currentPage.update(p => p - 1);
   }
-
-  get summaryCounts(): SummaryCounts {
-    const now = new Date();
-    const valid = this.appointments.filter(a => !(a.patientEmail === a.doctorEmail && a.status === 'CANCELLED'));
-    return {
-      pending: valid.filter(a => a.status === 'PENDING' && new Date(a.appointmentDate) >= now).length,
-      confirmed: valid.filter(a => a.status === 'CONFIRMED' && new Date(a.appointmentDate) >= now).length,
-      cancelled: valid.filter(a => a.status === 'CANCELLED' && new Date(a.appointmentDate) >= now).length,
-      all: valid.filter(a => new Date(a.appointmentDate) >= now).length
-    };
-  }
-
-  get paginatedAppointments(): Appointment[] {
-    const start = (this.currentPage - 1) * this.itemsPerPage;
-    return this.filteredAppointments.slice(start, start + this.itemsPerPage);
-  }
-  get totalPages(): number { return Math.ceil(this.filteredAppointments.length / this.itemsPerPage); }
-  nextPage() { if (this.currentPage < this.totalPages) this.currentPage++; }
-  prevPage() { if (this.currentPage > 1) this.currentPage--; }
 
   // ==== DIALOG ====
-  openStatusDialog(appointment: Appointment) {
-    this.selectedAppointment = appointment;
-    this.showCancelConfirm = false;
-    this.showStatusDialog = true;
+  openStatusDialog(appointment: Appointment): void {
+    this.selectedAppointment.set(appointment);
+    this.showCancelConfirm.set(false);
+    this.showStatusDialog.set(true);
   }
 
-  requestCancel() { this.showCancelConfirm = true; }
-  cancelCancelRequest() { this.showCancelConfirm = false; }
+  requestCancel(): void { this.showCancelConfirm.set(true); }
+  cancelCancelRequest(): void { this.showCancelConfirm.set(false); }
 
-  confirmCancelFinal() {
-    this.isSubmitting = true;
+  confirmCancelFinal(): void {
     this.changeStatus('CANCELLED');
   }
 
-  changeStatus(newStatus: string) {
-    if (!this.selectedAppointment) return;
-    this.isSubmitting = true;
-    this.appointmentService.updateAppointmentStatus(this.selectedAppointment.id, newStatus).subscribe({
+  changeStatus(newStatus: string): void {
+    const appointment = this.selectedAppointment();
+    if (!appointment) return;
+
+    this.isSubmitting.set(true);
+    this.appointmentService.updateAppointmentStatus(appointment.id, newStatus).subscribe({
       next: () => {
         this.messageService.add({ severity: 'success', summary: 'Erfolg', detail: 'Status aktualisiert!' });
-        this.showStatusDialog = false;
-        this.showCancelConfirm = false;
-        this.isSubmitting = false;
+        this.showStatusDialog.set(false);
+        this.showCancelConfirm.set(false);
+        this.isSubmitting.set(false);
         this.loadAppointments();
       },
-      error: (err: any) => {
-        this.isSubmitting = false;
+      error: (err: HttpErrorResponse) => {
+        this.isSubmitting.set(false);
         this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Aktion nicht möglich.' });
       }
     });
   }
 
-  quickConfirm(appt: Appointment) { this.selectedAppointment = appt; this.changeStatus('CONFIRMED'); }
-  quickCancel(appt: Appointment) { this.selectedAppointment = appt; this.changeStatus('CANCELLED'); }
-
-  openRescheduleDialog(appt: Appointment) {
-  this.showStatusDialog = false;
-  this.bookAppointmentModal.patientEmailToReschedule = appt.patientEmail;
-  this.bookAppointmentModal.oldAppointmentIdToCancel = appt.id;
-  this.bookAppointmentModal.userRole = this.userRole;
-
-  this.bookAppointmentModal.openDialog(); 
-
-  if (appt.doctorId) {
-    this.bookAppointmentModal.newAppointmentForm.patchValue({ doctorId: appt.doctorId });
-  }
-}
-
-  logout() { localStorage.removeItem('jwt_token'); window.location.href = '/login'; }
-
-  openNewAppointmentDialog() {
-    this.bookAppointmentModal.oldAppointmentIdToCancel = null;
-    this.bookAppointmentModal.patientEmailToReschedule = null;
-    this.bookAppointmentModal.userRole = this.userRole;
-    this.bookAppointmentModal.openDialog();
+  quickConfirm(appt: Appointment): void {
+    this.selectedAppointment.set(appt);
+    this.changeStatus('CONFIRMED');
   }
 
-  openScheduleDialog() { this.doctorSettingsModal.openDialog(); }
+  quickCancel(appt: Appointment): void {
+    this.selectedAppointment.set(appt);
+    this.changeStatus('CANCELLED');
+  }
+
+  openRescheduleDialog(appt: Appointment): void {
+    this.showStatusDialog.set(false);
+    this.bookAppointmentModal().openReschedule(appt, this.userRole());
+  }
+
+  openNewAppointmentDialog(): void {
+    this.bookAppointmentModal().openNew(this.userRole());
+  }
+
+  openScheduleDialog(): void {
+    this.doctorSettingsModal().openDialog();
+  }
+
+  logout(): void {
+    localStorage.removeItem('jwt_token');
+    window.location.href = '/login';
+  }
 }
