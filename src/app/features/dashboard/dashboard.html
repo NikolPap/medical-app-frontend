@@ -1,6 +1,6 @@
 <div class="flex flex-col md:flex-row bg-cool-paper font-sans overflow-hidden" style="height: 100dvh;">
 
-  <app-sidebar [userRole]="userRole"
+  <app-sidebar [userRole]="userRole()"
                (openSchedule)="openScheduleDialog()"
                (openNewAppointment)="openNewAppointmentDialog()"
                (logoutClicked)="logout()">
@@ -8,50 +8,54 @@
 
   <main class="flex-1 flex flex-col min-h-0 p-4 sm:p-6 md:p-8 pb-20 md:pb-8 overflow-hidden">
 
-    <app-dashboard-header [userEmail]="userEmail" [date]="minDate"></app-dashboard-header>
+    <app-dashboard-header [userEmail]="userEmail()" [date]="minDate"></app-dashboard-header>
 
-    <!-- ARZT -->
-    <div *ngIf="userRole === 'ROLE_DOCTOR'" class="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
-      <app-today-appointments [appointments]="todaysAppointments"
-                               (appointmentClick)="openStatusDialog($event)">
-      </app-today-appointments>
+    @if (userRole() === 'ROLE_DOCTOR') {
+      <!-- ARZT -->
+      <div class="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
+        <app-today-appointments [appointments]="todaysAppointments()"
+                                 (appointmentClick)="openStatusDialog($event)">
+        </app-today-appointments>
 
-      <app-doctor-appointment-list
-        [groups]="groupedDoctorAppointments"
-        [doctorView]="doctorView"
-        [currentFilter]="currentFilter"
-        [pendingCount]="pendingAppointmentsCount"
-        [userEmail]="userEmail"
-        (viewChange)="setDoctorView($event)"
-        (showPendingOnly)="showPendingOnly()"
-        (resetFilter)="resetDoctorFilter()"
-        (rowClick)="openStatusDialog($event)"
-        (confirm)="quickConfirm($event)"
-        (cancel)="quickCancel($event)">
-      </app-doctor-appointment-list>
-    </div>
+        <app-doctor-appointment-list
+          [groups]="groupedDoctorAppointments()"
+          [doctorView]="doctorView()"
+          [currentFilter]="currentFilter()"
+          [pendingCount]="pendingAppointmentsCount()"
+          [userEmail]="userEmail()"
+          (viewChange)="setDoctorView($event)"
+          (showPendingOnly)="showPendingOnly()"
+          (resetFilter)="resetDoctorFilter()"
+          (rowClick)="openStatusDialog($event)"
+          (confirm)="quickConfirm($event)"
+          (cancel)="quickCancel($event)">
+        </app-doctor-appointment-list>
+      </div>
+    }
 
-    <!-- PATIENT -->
-    <div *ngIf="userRole === 'ROLE_PATIENT'" class="flex flex-col gap-6 w-full flex-1 min-h-0">
-      <app-summary-cards [counts]="summaryCounts" [currentFilter]="currentFilter"
-                          (filterChange)="applyFilter($event)">
-      </app-summary-cards>
+    @if (userRole() === 'ROLE_PATIENT') {
+      <!-- PATIENT -->
+      <div class="flex flex-col gap-6 w-full flex-1 min-h-0">
+        <app-summary-cards [counts]="summaryCounts()" [currentFilter]="currentFilter()"
+                            (filterChange)="applyFilter($event)">
+        </app-summary-cards>
 
-      <app-patient-history-list
-        [appointments]="paginatedAppointments"
-        [historyView]="historyView"
-        [currentPage]="currentPage"
-        [totalPages]="totalPages"
-        (historyViewChange)="setHistoryView($event)"
-        (prevPage)="prevPage()"
-        (nextPage)="nextPage()"
-        (rowClick)="openStatusDialog($event)">
-      </app-patient-history-list>
-    </div>
+        <app-patient-history-list
+          [appointments]="paginatedAppointments()"
+          [historyView]="historyView()"
+          [currentPage]="currentPage()"
+          [totalPages]="totalPages()"
+          (historyViewChange)="setHistoryView($event)"
+          (prevPage)="prevPage()"
+          (nextPage)="nextPage()"
+          (rowClick)="openStatusDialog($event)">
+        </app-patient-history-list>
+      </div>
+    }
 
   </main>
 
-  <app-bottom-nav [userRole]="userRole"
+  <app-bottom-nav [userRole]="userRole()"
                    (openSchedule)="openScheduleDialog()"
                    (openNewAppointment)="openNewAppointmentDialog()"
                    (logoutClicked)="logout()">
@@ -62,12 +66,11 @@
 <app-doctor-settings #doctorSettingsModal (settingsChanged)="loadAppointments()"></app-doctor-settings>
 
 <app-appointment-detail-dialog
-  [visible]="showStatusDialog"
-  [appointment]="selectedAppointment"
-  [userRole]="userRole"
-  [showCancelConfirm]="showCancelConfirm"
-  [isSubmitting]="isSubmitting"
-  (visibleChange)="showStatusDialog = $event"
+  [(visible)]="showStatusDialog"
+  [appointment]="selectedAppointment()"
+  [userRole]="userRole()"
+  [showCancelConfirm]="showCancelConfirm()"
+  [isSubmitting]="isSubmitting()"
   (confirmStatus)="changeStatus('CONFIRMED')"
   (requestCancel)="requestCancel()"
   (cancelCancelRequest)="cancelCancelRequest()"
