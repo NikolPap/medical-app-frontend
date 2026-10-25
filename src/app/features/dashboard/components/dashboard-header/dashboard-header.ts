@@ -1,15 +1,15 @@
-import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, input } from '@angular/core';
+import { DatePipe, TitleCasePipe } from '@angular/common';
 import { InitialPipe } from '../../../../core/pipes/appointment-status-pipe';
 
 @Component({
   selector: 'app-dashboard-header',
   standalone: true,
-  imports: [CommonModule, InitialPipe],
+  imports: [DatePipe, TitleCasePipe, InitialPipe],
   templateUrl: './dashboard-header.html',
   host: { style: 'display: contents' }
 })
 export class DashboardHeaderComponent {
-  @Input() userEmail: string = '';
-  @Input() date: Date = new Date();
+  readonly userEmail = input('');
+  readonly date = input<Date>(new Date());
 }
