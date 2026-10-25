@@ -1,61 +1,65 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, computed, input, model, output } from '@angular/core';
+import { DatePipe, NgClass } from '@angular/common';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { AvatarModule } from 'primeng/avatar';
 import { Appointment } from '../../../../core/models/appointment.model';
-import { StatusLabelPipe, StatusDotClassPipe, StatusBadgeClassPipe, InitialPipe } from '../../../../core/pipes/appointment-status-pipe';
+import {
+  StatusLabelPipe, StatusDotClassPipe, StatusBadgeClassPipe, InitialPipe
+} from '../../../../core/pipes/appointment-status-pipe';
+
+interface TimelineStep {
+  label: string;
+  state: 'done' | 'current' | 'future';
+}
 
 @Component({
   selector: 'app-appointment-detail-dialog',
   standalone: true,
-  imports: [CommonModule, DialogModule, ButtonModule, AvatarModule, StatusLabelPipe, StatusDotClassPipe, StatusBadgeClassPipe, InitialPipe],
+  imports: [
+    NgClass, DatePipe, DialogModule, ButtonModule, AvatarModule,
+    StatusLabelPipe, StatusDotClassPipe, StatusBadgeClassPipe, InitialPipe
+  ],
   templateUrl: './appointment-detail-dialog.html'
 })
 export class AppointmentDetailDialogComponent {
-  @Input() visible: boolean = false;
-  @Input() appointment: Appointment | null = null;
-  @Input() userRole: string = '';
-  @Input() showCancelConfirm: boolean = false;
-  @Input() isSubmitting: boolean = false;
+  readonly visible = model(false);
+  readonly appointment = input<Appointment | null>(null);
+  readonly userRole = input('');
+  readonly showCancelConfirm = input(false);
+  readonly isSubmitting = input(false);
 
-  @Output() visibleChange = new EventEmitter<boolean>();
-  @Output() confirmStatus = new EventEmitter<void>();
-  @Output() requestCancel = new EventEmitter<void>();
-  @Output() cancelCancelRequest = new EventEmitter<void>();
-  @Output() confirmCancelFinal = new EventEmitter<void>();
-  @Output() reschedule = new EventEmitter<Appointment>();
+  readonly confirmStatus = output<void>();
+  readonly requestCancel = output<void>();
+  readonly cancelCancelRequest = output<void>();
+  readonly confirmCancelFinal = output<void>();
+  readonly reschedule = output<Appointment>();
 
-  onHide() {
-    this.visibleChange.emit(false);
-  }
+  readonly isPastAppointment = computed(() => {
+    const appt = this.appointment();
+    return !!appt && new Date(appt.appointmentDate) < new Date();
+  });
 
-  get isPastAppointment(): boolean {
-    if (!this.appointment) return false;
-    return new Date(this.appointment.appointmentDate) < new Date();
-  }
-
-  // NEU: Darf der Patient noch stornieren/verschieben? (48-Stunden-Regel)
-  get canCancelOrReschedule(): boolean {
-    if (!this.appointment || this.userRole === 'ROLE_DOCTOR') {
-      return true; // Der Arzt darf immer!
+  /** Darf der Patient noch stornieren/verschieben? (48-Stunden-Regel) */
+  readonly canCancelOrReschedule = computed(() => {
+    const appt = this.appointment();
+    if (!appt || this.userRole() === 'ROLE_DOCTOR') {
+      return true; // Der Arzt darf immer
     }
 
-    const apptDate = new Date(this.appointment.appointmentDate).getTime();
-    const now = new Date().getTime();
-    
-    // Wie viele Stunden sind es noch bis zum Termin?
-    const hoursDifference = (apptDate - now) / (1000 * 60 * 60);
+    const hoursUntil = (new Date(appt.appointmentDate).getTime() - Date.now()) / (1000 * 60 * 60);
+    return hoursUntil >= 48;
+  });
 
-    return hoursDifference >= 48; // Nur true, wenn mehr als 48 Stunden entfernt!
-  }
+  readonly timelineSteps = computed<TimelineStep[]>(() => {
+    const appt = this.appointment();
+    if (!appt) return [];
 
-  getTimelineSteps(appt: Appointment): { label: string, state: 'done' | 'current' | 'future' }[] {
     const isPast = new Date(appt.appointmentDate) < new Date();
     return [
       { label: 'Angefragt', state: 'done' },
       { label: 'Bestätigt', state: appt.status === 'CONFIRMED' ? 'done' : 'current' },
       { label: isPast ? 'Abgeschlossen' : 'Termin', state: (isPast && appt.status === 'CONFIRMED') ? 'done' : 'future' }
     ];
-  }
+  });
 }
