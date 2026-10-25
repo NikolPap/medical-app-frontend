@@ -4,12 +4,16 @@
   </div>
 
   <div class="flex-1 overflow-y-auto flex flex-col gap-3 sm:gap-4 pr-1 min-h-0">
-    <div *ngIf="appointments.length === 0" class="p-6 sm:p-8 bg-white rounded-3xl shadow-sm text-center text-gray-400 border border-gray-100">
-      Keine Termine für heute.
-    </div>
+    @if (appointments().length === 0) {
+      <div class="p-6 sm:p-8 bg-white rounded-3xl shadow-sm text-center text-gray-400 border border-gray-100">
+        Keine Termine für heute.
+      </div>
+    }
 
-    <app-appointment-row *ngFor="let appt of appointments" [appt]="appt" mode="compact"
-                          (rowClick)="appointmentClick.emit($event)" class="flex-shrink-0">
-    </app-appointment-row>
+    @for (appt of appointments(); track appt.id) {
+      <app-appointment-row [appt]="appt" mode="compact"
+                            (rowClick)="appointmentClick.emit($event)" class="flex-shrink-0">
+      </app-appointment-row>
+    }
   </div>
 </div>
