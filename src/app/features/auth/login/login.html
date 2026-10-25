@@ -48,18 +48,12 @@
             placeholder="arzt@klinik.de"
             class="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm"
           />
-          <small
-            *ngIf="loginForm.get('email')?.errors?.['required'] && loginForm.get('email')?.touched"
-            class="text-status-brick font-bold"
-          >
-            Bitte gib deine E-Mail Adresse ein.
-          </small>
-          <small
-            *ngIf="loginForm.get('email')?.errors?.['email'] && loginForm.get('email')?.touched"
-            class="text-status-brick font-bold"
-          >
-            Bitte gib eine gültige E-Mail Adresse ein.
-          </small>
+          @if (loginForm.get('email')?.errors?.['required'] && loginForm.get('email')?.touched) {
+            <small class="text-status-brick font-bold">Bitte gib deine E-Mail Adresse ein.</small>
+          }
+          @if (loginForm.get('email')?.errors?.['email'] && loginForm.get('email')?.touched) {
+            <small class="text-status-brick font-bold">Bitte gib eine gültige E-Mail Adresse ein.</small>
+          }
         </div>
 
         <!-- Passwort -->
@@ -75,12 +69,11 @@
             inputStyleClass="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-warm-brass focus:ring-1 focus:ring-warm-brass outline-none transition-all shadow-sm"
           >
           </p-password>
-          <small
-            *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
-            class="text-status-brick font-bold"
-          >
-            Das Passwort muss mindestens 6 Zeichen lang sein.
-          </small>
+          @if (loginForm.get('password')?.invalid && loginForm.get('password')?.touched) {
+            <small class="text-status-brick font-bold">
+              Das Passwort muss mindestens 6 Zeichen lang sein.
+            </small>
+          }
         </div>
 
         <!-- Links -->
