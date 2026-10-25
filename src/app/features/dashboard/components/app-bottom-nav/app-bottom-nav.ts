@@ -1,23 +1,23 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, input, output, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-bottom-nav',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [RouterModule],
   templateUrl: './app-bottom-nav.html',
   host: { style: 'display: contents' }
 })
 export class AppBottomNavComponent {
-  @Input() userRole: string = '';
-  @Output() openSchedule = new EventEmitter<void>();
-  @Output() openNewAppointment = new EventEmitter<void>();
-  @Output() logoutClicked = new EventEmitter<void>();
+  readonly userRole = input('');
 
-  showMoreMenu: boolean = false;
+  readonly openSchedule = output<void>();
+  readonly openNewAppointment = output<void>();
+  readonly logoutClicked = output<void>();
 
-  toggleMoreMenu() {
-    this.showMoreMenu = !this.showMoreMenu;
+  readonly showMoreMenu = signal(false);
+
+  toggleMoreMenu(): void {
+    this.showMoreMenu.update(open => !open);
   }
 }
