@@ -1,66 +1,54 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router'; 
-import { ApiResponse } from '../../../core/models/appointment.model';
+import { Router, RouterModule } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 
-
-import { AuthService } from '../../../core/services/auth'; 
-
-// --- PRIMENG IMPORTS ---
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
 import { MessageService } from 'primeng/api';
+
+import { AuthService } from '../../../core/services/auth';
+import { ApiResponse } from '../../../core/models/appointment.model';
 import { LegalFooterComponent } from '../../../shared/legal-footer/legal-footer';
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
+    RouterModule,
     InputTextModule,
     PasswordModule,
     ButtonModule,
-    CardModule,
-    RouterModule,
     LegalFooterComponent
   ],
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
 export class Login {
-  loginForm: FormGroup;
+  private readonly fb = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly messageService = inject(MessageService);
 
-  constructor(
-    private fb: FormBuilder,
-    private authService: AuthService,
-    private router: Router,
-     private messageService: MessageService
-  ) {
-   this.loginForm = this.fb.group({
-  email: ['', [Validators.required, Validators.email]],
-  password: ['', [Validators.required, Validators.minLength(6)]],
+  readonly loginForm: FormGroup = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]],
   });
-  }
 
-  onSubmit() {
+  onSubmit(): void {
     if (this.loginForm.invalid) return;
+
     this.authService.login(this.loginForm.value).subscribe({
       next: (response: ApiResponse) => {
-  localStorage.setItem('jwt_token', response.token!);
-  this.messageService.add({ severity: 'success', summary: 'Erfolg', detail: 'Login erfolgreich!' });
-  this.router.navigate([response.role === 'ROLE_ADMIN' ? '/admin' : '/dashboard']);
-},
+        localStorage.setItem('jwt_token', response.token!);
+        this.messageService.add({ severity: 'success', summary: 'Erfolg', detail: 'Login erfolgreich!' });
+        this.router.navigate([response.role === 'ROLE_ADMIN' ? '/admin' : '/dashboard']);
+      },
       error: (err: HttpErrorResponse) => {
-        this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Login fehlgeschlagen.'});
+        this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Login fehlgeschlagen.' });
       },
     });
   }
-
-  
-
 }
