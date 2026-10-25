@@ -1,16 +1,20 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+import { Component, inject, signal } from '@angular/core';
+import {
+  ReactiveFormsModule, FormBuilder, FormGroup, Validators,
+  AbstractControl, ValidationErrors, ValidatorFn
+} from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { AuthService } from '../../../core/services/auth';
-import { MessageService } from 'primeng/api';
 import { HttpErrorResponse } from '@angular/common/http';
 
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
+import { MessageService } from 'primeng/api';
+
+import { AuthService } from '../../../core/services/auth';
 import { LegalFooterComponent } from '../../../shared/legal-footer/legal-footer';
+
+const PASSWORD_PATTERN = '(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{6,}';
 
 // Custom Validator für Password-Match
 export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
@@ -25,70 +29,69 @@ export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): V
 @Component({
   selector: 'app-reset-password',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, InputTextModule, PasswordModule, ButtonModule, CardModule, LegalFooterComponent],
+  imports: [ReactiveFormsModule, RouterModule, InputTextModule, PasswordModule, ButtonModule, LegalFooterComponent],
   templateUrl: './reset-password.html'
 })
 export class ResetPasswordComponent {
-  
-  step: number = 1; // 1 = Code prüfen, 2 = Neues Passwort setzen
-  resetForm: FormGroup;
+  private readonly fb = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly messageService = inject(MessageService);
 
-  constructor(private fb: FormBuilder, private authService: AuthService, private router: Router, private messageService: MessageService) {
-    this.resetForm = this.fb.group({
-  email: ['', [Validators.required, Validators.email]],
-  code: ['', [Validators.required, Validators.pattern(/^[0-9]{6}$/)]],
-  newPassword: ['', [Validators.pattern('(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{6,}')]],
-  confirmPassword: ['']
+  /** 1 = Code prüfen, 2 = Neues Passwort setzen */
+  readonly step = signal<1 | 2>(1);
+
+  readonly resetForm: FormGroup = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+    code: ['', [Validators.required, Validators.pattern(/^[0-9]{6}$/)]],
+    newPassword: ['', [Validators.pattern(PASSWORD_PATTERN)]],
+    confirmPassword: ['']
   }, { validators: passwordMatchValidator });
-  }
 
-  // Wird aufgerufen, wenn der Benutzer auf "Code überprüfen" klickt (Schritt 1)
- verifyCode() {
-  if (this.resetForm.get('email')?.invalid || this.resetForm.get('code')?.invalid) {
-    this.resetForm.get('email')?.markAsTouched();
-    this.resetForm.get('code')?.markAsTouched();
-    return;
-  }
-    const requestData = {
-      email: this.resetForm.value.email,
-      code: this.resetForm.value.code
-    };
+  // Schritt 1: Code prüfen
+  verifyCode(): void {
+    const email = this.resetForm.get('email');
+    const code = this.resetForm.get('code');
 
-    this.authService.verifyResetCode(requestData).subscribe({
+    if (email?.invalid || code?.invalid) {
+      email?.markAsTouched();
+      code?.markAsTouched();
+      return;
+    }
+
+    this.authService.verifyResetCode({ email: email?.value, code: code?.value }).subscribe({
       next: () => {
-        this.messageService.add({severity: 'success', summary: 'Gültig', detail: 'Code ist korrekt! Du kannst jetzt ein neues Passwort setzen.'});
-        
-        // Wir machen die Passwort-Felder zur Pflicht!
-        this.resetForm.get('newPassword')?.setValidators([Validators.required, Validators.minLength(6), Validators.pattern('(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{6,}')]);
-        this.resetForm.get('confirmPassword')?.setValidators([Validators.required]);
-        this.resetForm.get('newPassword')?.updateValueAndValidity();
-        this.resetForm.get('confirmPassword')?.updateValueAndValidity();
-        
-        this.step = 2; // Gehe zu Schritt 2!
+        this.messageService.add({ severity: 'success', summary: 'Gültig', detail: 'Code ist korrekt! Du kannst jetzt ein neues Passwort setzen.' });
+
+        // In Schritt 2 sind die Passwort-Felder Pflicht
+        const newPassword = this.resetForm.get('newPassword');
+        const confirmPassword = this.resetForm.get('confirmPassword');
+        newPassword?.setValidators([Validators.required, Validators.minLength(6), Validators.pattern(PASSWORD_PATTERN)]);
+        confirmPassword?.setValidators([Validators.required]);
+        newPassword?.updateValueAndValidity();
+        confirmPassword?.updateValueAndValidity();
+
+        this.step.set(2);
       },
-      error: (err:  HttpErrorResponse) => {
-        this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Falscher Code oder E-Mail.'});
+      error: (err: HttpErrorResponse) => {
+        this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Falscher Code oder E-Mail.' });
       }
     });
   }
 
-  // Wird aufgerufen, wenn er sein neues Passwort speichert (Schritt 2)
-  onSubmitNewPassword() {
+  // Schritt 2: neues Passwort speichern
+  onSubmitNewPassword(): void {
     if (this.resetForm.invalid) return;
 
-    const finalData = {
-      email: this.resetForm.value.email,
-      code: this.resetForm.value.code,
-      newPassword: this.resetForm.value.newPassword
-    };
+    const { email, code, newPassword } = this.resetForm.value;
 
-    this.authService.resetPassword(finalData).subscribe({
+    this.authService.resetPassword({ email, code, newPassword }).subscribe({
       next: () => {
-        this.messageService.add({severity: 'success', summary: 'Erfolg', detail: 'Dein Passwort wurde erfolgreich geändert!'});
+        this.messageService.add({ severity: 'success', summary: 'Erfolg', detail: 'Dein Passwort wurde erfolgreich geändert!' });
         this.router.navigate(['/login']);
       },
-      error: (err:  HttpErrorResponse ) => {
-        this.messageService.add({severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Fehler beim Ändern.'});
+      error: (err: HttpErrorResponse) => {
+        this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Fehler beim Ändern.' });
       }
     });
   }
