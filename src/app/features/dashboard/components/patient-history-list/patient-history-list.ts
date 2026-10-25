@@ -1,29 +1,30 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, input, output } from '@angular/core';
+import { DatePipe, NgClass, TitleCasePipe } from '@angular/common';
 import { Appointment } from '../../../../core/models/appointment.model';
 import { StatusLabelPipe, StatusDotClassPipe } from '../../../../core/pipes/appointment-status-pipe';
 
 @Component({
-   selector: 'app-patient-history-list',
+  selector: 'app-patient-history-list',
   standalone: true,
-  imports: [CommonModule, StatusLabelPipe, StatusDotClassPipe],
+  imports: [NgClass, DatePipe, TitleCasePipe, StatusLabelPipe, StatusDotClassPipe],
   templateUrl: './patient-history-list.html',
   host: { style: 'display: contents' }
 })
 export class PatientHistoryListComponent {
-  @Input() appointments: Appointment[] = [];
-  @Input() historyView: 'UPCOMING' | 'PAST' = 'UPCOMING';
-  @Input() currentPage: number = 1;
-  @Input() totalPages: number = 1;
+  readonly appointments = input<Appointment[]>([]);
+  readonly historyView = input<'UPCOMING' | 'PAST'>('UPCOMING');
+  readonly currentPage = input(1);
+  readonly totalPages = input(1);
 
-  @Output() historyViewChange = new EventEmitter<'UPCOMING' | 'PAST'>();
-  @Output() prevPage = new EventEmitter<void>();
-  @Output() nextPage = new EventEmitter<void>();
-  @Output() rowClick = new EventEmitter<Appointment>();
+  readonly historyViewChange = output<'UPCOMING' | 'PAST'>();
+  readonly prevPage = output<void>();
+  readonly nextPage = output<void>();
+  readonly rowClick = output<Appointment>();
 
   getDayNumber(dateStr: string): string {
     return new Date(dateStr).getDate().toString().padStart(2, '0');
   }
+
   getMonthShort(dateStr: string): string {
     return new Date(dateStr).toLocaleString('de-DE', { month: 'short' });
   }
