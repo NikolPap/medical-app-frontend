@@ -16,65 +16,87 @@
     <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 md:p-12">
 
       <h1 class="font-serif text-3xl md:text-4xl text-ink-teal font-semibold mb-2">Datenschutzerklärung</h1>
-      <p class="text-sm text-gray-400 mb-8">Stand: [Datum]</p>
+      <p class="text-sm text-gray-400 mb-8">Stand: 25. Oktober 2026</p>
 
       <div class="bg-warm-brass/10 border border-warm-brass/30 rounded-xl p-4 mb-8 text-sm text-ink-teal">
         <i class="pi pi-info-circle mr-2 text-warm-brass"></i>
-        Diese Plattform verarbeitet Gesundheitsdaten (besondere Kategorien personenbezogener Daten
-        gemäß Art. 9 DSGVO). Bitte lesen Sie diese Erklärung sorgfältig.
+        MedSync ist ein Demo- und Portfolio-Projekt und wird nicht öffentlich betrieben. Bitte geben
+        Sie keine echten personenbezogenen oder Gesundheitsdaten ein. Die Anwendung ist so aufgebaut,
+        dass sie Gesundheitsdaten (besondere Kategorien personenbezogener Daten gemäß Art. 9 DSGVO)
+        verarbeiten könnte; die folgenden Angaben beschreiben diese Verarbeitung.
       </div>
 
       <section class="mb-8">
-        <h2 class="font-serif text-xl text-ink-teal font-semibold mb-3">1. Verantwortlicher</h2>
+        <h2 class="font-serif text-xl text-ink-teal font-semibold mb-3">1. Verantwortliche</h2>
         <p class="text-gray-600 leading-relaxed">
-          Verantwortlicher im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:<br>
-          [Firmenname]<br>
-          [Straße, PLZ Ort]<br>
-          E-Mail: [E-Mail-Adresse]<br>
-          [Ggf. Kontaktdaten des Datenschutzbeauftragten]
+          Verantwortliche im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:<br>
+          Nikoleta Papalazarou<br>
+          65203 Wiesbaden, Deutschland<br>
+          E-Mail: nikoletapapa01&#64;hotmail.com
         </p>
       </section>
 
       <section class="mb-8">
-        <h2 class="font-serif text-xl text-ink-teal font-semibold mb-3">2. Welche Daten wir verarbeiten</h2>
-        <p class="text-gray-600 leading-relaxed mb-3">Bei der Nutzung von MedSync verarbeiten wir insbesondere:</p>
+        <h2 class="font-serif text-xl text-ink-teal font-semibold mb-3">2. Welche Daten verarbeitet werden</h2>
+        <p class="text-gray-600 leading-relaxed mb-3">Bei der Nutzung von MedSync werden insbesondere verarbeitet:</p>
         <ul class="list-disc list-inside text-gray-600 leading-relaxed space-y-1">
           <li>Kontaktdaten (Name, E-Mail-Adresse, Telefonnummer)</li>
-          <li>Kontodaten (Rolle: Patient oder Arzt, Passwort in verschlüsselter Form)</li>
+          <li>Kontodaten (Rolle: Patient, Arzt oder Admin; das Passwort wird ausschließlich als Hash (BCrypt) gespeichert)</li>
           <li>Termindaten (Datum, Uhrzeit, behandelnder Arzt bzw. Patient, Status)</li>
-          <li>Bei Patienten: Geschlecht, Versicherungsart — besondere Kategorien personenbezogener Daten gemäß Art. 9 DSGVO</li>
-          <li>Bei Ärzten: Fachrichtung, Praxisadresse, Arbeitszeiten</li>
+          <li>Bei Patienten: Geschlecht und Versicherungsart (besondere Kategorien personenbezogener Daten gemäß Art. 9 DSGVO)</li>
+          <li>Bei Ärzten: Fachrichtung, Praxisadresse, Arbeitszeiten und Urlaubstage</li>
+          <li>Technische Daten zur Anmeldung: Bestätigungs- und Reset-Codes werden nur als Hash und zeitlich begrenzt gespeichert</li>
         </ul>
       </section>
 
       <section class="mb-8">
         <h2 class="font-serif text-xl text-ink-teal font-semibold mb-3">3. Rechtsgrundlage der Verarbeitung</h2>
         <p class="text-gray-600 leading-relaxed">
-          Die Verarbeitung erfolgt auf Grundlage von Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung —
+          Die Verarbeitung erfolgt auf Grundlage von Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung –
           Terminvereinbarung) sowie, soweit Gesundheitsdaten betroffen sind, auf Grundlage Ihrer
           ausdrücklichen Einwilligung gemäß Art. 9 Abs. 2 lit. a DSGVO, die Sie bei der Registrierung erteilen.
         </p>
       </section>
 
       <section class="mb-8">
-        <h2 class="font-serif text-xl text-ink-teal font-semibold mb-3">4. Weitergabe von Daten</h2>
+        <h2 class="font-serif text-xl text-ink-teal font-semibold mb-3">4. Speicherung im Browser und Cookies</h2>
         <p class="text-gray-600 leading-relaxed">
-          Ihre Termindaten werden ausschließlich zwischen dem jeweiligen Patienten und dem behandelnden
+          Nach der Anmeldung wird ein Authentifizierungs-Token (JWT) im lokalen Speicher Ihres Browsers
+          (localStorage) abgelegt, damit Sie angemeldet bleiben. Dieses Token ist technisch notwendig und
+          wird beim Abmelden entfernt. MedSync setzt keine Tracking- oder Werbe-Cookies und verwendet
+          keine Analyse-Dienste.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2 class="font-serif text-xl text-ink-teal font-semibold mb-3">5. E-Mail-Versand</h2>
+        <p class="text-gray-600 leading-relaxed">
+          Für die Bestätigung Ihrer E-Mail-Adresse, das Zurücksetzen des Passworts und Benachrichtigungen
+          zu Terminen werden E-Mails versendet. Dafür wird Ihre E-Mail-Adresse an den konfigurierten
+          E-Mail-Server übermittelt.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2 class="font-serif text-xl text-ink-teal font-semibold mb-3">6. Weitergabe von Daten</h2>
+        <p class="text-gray-600 leading-relaxed">
+          Termindaten werden ausschließlich zwischen dem jeweiligen Patienten und dem behandelnden
           Arzt bzw. der behandelnden Ärztin geteilt. Eine Weitergabe an Dritte erfolgt nur, soweit dies
           gesetzlich vorgeschrieben ist oder Sie ausdrücklich eingewilligt haben.
         </p>
       </section>
 
       <section class="mb-8">
-        <h2 class="font-serif text-xl text-ink-teal font-semibold mb-3">5. Speicherdauer</h2>
+        <h2 class="font-serif text-xl text-ink-teal font-semibold mb-3">7. Speicherdauer</h2>
         <p class="text-gray-600 leading-relaxed">
-          Wir speichern personenbezogene Daten nur so lange, wie dies für die Bereitstellung unserer
-          Dienste erforderlich ist oder gesetzliche Aufbewahrungsfristen dies vorschreiben.
+          Personenbezogene Daten werden nur so lange gespeichert, wie dies für die Bereitstellung des
+          Dienstes erforderlich ist oder gesetzliche Aufbewahrungsfristen dies vorschreiben. Bestätigungs-
+          und Reset-Codes werden nach Ablauf ihrer Gültigkeit regelmäßig automatisch bereinigt.
         </p>
       </section>
 
       <section class="mb-8">
-        <h2 class="font-serif text-xl text-ink-teal font-semibold mb-3">6. Ihre Rechte</h2>
+        <h2 class="font-serif text-xl text-ink-teal font-semibold mb-3">8. Ihre Rechte</h2>
         <p class="text-gray-600 leading-relaxed mb-3">Sie haben jederzeit das Recht auf:</p>
         <ul class="list-disc list-inside text-gray-600 leading-relaxed space-y-1">
           <li>Auskunft über Ihre gespeicherten Daten (Art. 15 DSGVO)</li>
@@ -85,22 +107,26 @@
           <li>Widerruf einer erteilten Einwilligung mit Wirkung für die Zukunft (Art. 7 Abs. 3 DSGVO)</li>
           <li>Beschwerde bei einer Aufsichtsbehörde (Art. 77 DSGVO)</li>
         </ul>
+        <p class="text-gray-600 leading-relaxed mt-3">
+          Zur Ausübung Ihrer Rechte genügt eine E-Mail an die oben genannte Adresse.
+        </p>
       </section>
 
       <section class="mb-8">
-        <h2 class="font-serif text-xl text-ink-teal font-semibold mb-3">7. Datensicherheit</h2>
+        <h2 class="font-serif text-xl text-ink-teal font-semibold mb-3">9. Datensicherheit</h2>
         <p class="text-gray-600 leading-relaxed">
-          Wir setzen technische und organisatorische Sicherheitsmaßnahmen ein, um Ihre Daten gegen
-          zufällige oder vorsätzliche Manipulation, Verlust, Zerstörung oder unberechtigten Zugriff zu
-          schützen, einschließlich Verschlüsselung bei der Übertragung.
+          Es werden technische und organisatorische Maßnahmen eingesetzt, unter anderem: Passwörter nur
+          als BCrypt-Hash, zustandslose Authentifizierung mit signierten Tokens, rollenbasierte
+          Zugriffskontrolle, Schutz vor wiederholten Fehlversuchen bei der Anmeldung sowie die
+          Verschlüsselung der Übertragung über HTTPS bei einem öffentlichen Betrieb.
         </p>
       </section>
 
       <section>
-        <h2 class="font-serif text-xl text-ink-teal font-semibold mb-3">8. Änderung dieser Datenschutzerklärung</h2>
+        <h2 class="font-serif text-xl text-ink-teal font-semibold mb-3">10. Änderung dieser Datenschutzerklärung</h2>
         <p class="text-gray-600 leading-relaxed">
-          Wir behalten uns vor, diese Datenschutzerklärung anzupassen, um sie stets aktuellen rechtlichen
-          Anforderungen anzupassen. Für Ihren erneuten Besuch gilt dann die neue Datenschutzerklärung.
+          Diese Datenschutzerklärung kann angepasst werden, um sie aktuellen rechtlichen Anforderungen
+          oder Änderungen der Anwendung anzupassen. Es gilt die jeweils aktuelle Fassung.
         </p>
       </section>
 
