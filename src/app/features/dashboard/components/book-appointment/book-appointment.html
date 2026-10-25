@@ -1,5 +1,5 @@
 <!-- POP-UP: NEUEN TERMIN BUCHEN / VERSCHIEBEN -->
-<p-dialog [header]="isRescheduleMode ? 'Termin verschieben' : 'Neuen Termin buchen'"
+<p-dialog [header]="isRescheduleMode() ? 'Termin verschieben' : 'Neuen Termin buchen'"
           [modal]="true" [(visible)]="showDialog" [style]="{ width: '90vw', maxWidth: '35rem' }"
           [focusOnShow]="false"
           styleClass="rounded-3xl shadow-2xl">
@@ -8,13 +8,13 @@
 
     <div class="text-center mb-6 mt-2">
       <div class="w-12 h-12 bg-cool-paper rounded-full flex items-center justify-center text-ink-teal mx-auto mb-3">
-        <i [class]="isRescheduleMode ? 'pi pi-calendar text-xl' : 'pi pi-calendar-plus text-xl'"></i>
+        <i [class]="isRescheduleMode() ? 'pi pi-calendar text-xl' : 'pi pi-calendar-plus text-xl'"></i>
       </div>
       <h2 class="font-serif text-xl sm:text-2xl font-bold text-ink-teal">
-        {{ isRescheduleMode ? 'Termin verschieben' : 'Termin vereinbaren' }}
+        {{ isRescheduleMode() ? 'Termin verschieben' : 'Termin vereinbaren' }}
       </h2>
       <p class="text-xs sm:text-sm text-gray-500 mt-1">
-        {{ isRescheduleMode ? 'Der bisherige Termin wird automatisch storniert.' : 'Wähle deinen Arzt und einen passenden Zeitpunkt.' }}
+        {{ isRescheduleMode() ? 'Der bisherige Termin wird automatisch storniert.' : 'Wähle deinen Arzt und einen passenden Zeitpunkt.' }}
       </p>
     </div>
 
@@ -23,18 +23,20 @@
       <div class="flex flex-col gap-2">
         <label class="font-medium text-gray-600 text-sm">Wähle einen Spezialisten</label>
         <p-select
-          [options]="doctors"
+          [options]="doctors()"
           formControlName="doctorId"
           placeholder="Arzt auswählen"
           optionLabel="label"
           optionValue="value"
-          [readonly]="oldAppointmentIdToCancel !== null"
+          [readonly]="isRescheduleMode()"
           styleClass="w-full h-[52px] rounded-xl border-gray-200 shadow-sm"
           (onChange)="loadAvailableSlots()">
         </p-select>
-        <p *ngIf="isRescheduleMode" class="text-xs text-gray-400 flex items-center gap-1">
-          <i class="pi pi-lock text-[10px]"></i> Der Arzt bleibt beim Verschieben unverändert.
-        </p>
+        @if (isRescheduleMode()) {
+          <p class="text-xs text-gray-400 flex items-center gap-1">
+            <i class="pi pi-lock text-[10px]"></i> Der Arzt bleibt beim Verschieben unverändert.
+          </p>
+        }
       </div>
 
       <div class="flex flex-col gap-2">
@@ -53,60 +55,76 @@
         </p-datepicker>
       </div>
 
-      <div *ngIf="isLoadingSlots" class="flex items-center justify-center gap-2 py-6 text-gray-400 text-sm">
-        <i class="pi pi-spin pi-spinner"></i> Verfügbare Zeiten werden geladen…
-      </div>
-
-      <div *ngIf="!isLoadingSlots && availableSlots.length > 0" class="flex flex-col gap-4 bg-cool-paper p-4 sm:p-5 rounded-2xl border border-gray-100">
-        <label class="font-serif font-bold text-ink-teal text-sm sm:text-base"><i class="pi pi-clock mr-2 text-warm-brass"></i>Verfügbare Uhrzeiten</label>
-
-        <div *ngIf="morningSlots.length > 0">
-          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Vormittag</p>
-          <div class="flex flex-wrap gap-2">
-            <button *ngFor="let time of morningSlots" type="button" (click)="selectTimeSlot(time)"
-                    class="px-3 sm:px-4 py-2 rounded-lg font-semibold text-xs sm:text-sm border transition-all duration-200"
-                    [ngClass]="{
-                      'bg-ink-teal text-white border-ink-teal shadow-md': selectedTimeSlot === time,
-                      'bg-white text-gray-700 border-gray-200 hover:border-warm-brass hover:text-ink-teal hover:bg-orange-50': selectedTimeSlot !== time
-                    }">
-              {{ time }}
-            </button>
-          </div>
+      @if (isLoadingSlots()) {
+        <div class="flex items-center justify-center gap-2 py-6 text-gray-400 text-sm">
+          <i class="pi pi-spin pi-spinner"></i> Verfügbare Zeiten werden geladen…
         </div>
+      }
 
-        <div *ngIf="afternoonSlots.length > 0">
-          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Nachmittag</p>
-          <div class="flex flex-wrap gap-2">
-            <button *ngFor="let time of afternoonSlots" type="button" (click)="selectTimeSlot(time)"
-                    class="px-3 sm:px-4 py-2 rounded-lg font-semibold text-xs sm:text-sm border transition-all duration-200"
-                    [ngClass]="{
-                      'bg-ink-teal text-white border-ink-teal shadow-md': selectedTimeSlot === time,
-                      'bg-white text-gray-700 border-gray-200 hover:border-warm-brass hover:text-ink-teal hover:bg-orange-50': selectedTimeSlot !== time
-                    }">
-              {{ time }}
-            </button>
-          </div>
+      @if (!isLoadingSlots() && availableSlots().length > 0) {
+        <div class="flex flex-col gap-4 bg-cool-paper p-4 sm:p-5 rounded-2xl border border-gray-100">
+          <label class="font-serif font-bold text-ink-teal text-sm sm:text-base"><i class="pi pi-clock mr-2 text-warm-brass"></i>Verfügbare Uhrzeiten</label>
+
+          @if (morningSlots().length > 0) {
+            <div>
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Vormittag</p>
+              <div class="flex flex-wrap gap-2">
+                @for (time of morningSlots(); track time) {
+                  <button type="button" (click)="selectTimeSlot(time)"
+                          class="px-3 sm:px-4 py-2 rounded-lg font-semibold text-xs sm:text-sm border transition-all duration-200"
+                          [ngClass]="{
+                            'bg-ink-teal text-white border-ink-teal shadow-md': selectedTimeSlot() === time,
+                            'bg-white text-gray-700 border-gray-200 hover:border-warm-brass hover:text-ink-teal hover:bg-orange-50': selectedTimeSlot() !== time
+                          }">
+                    {{ time }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          @if (afternoonSlots().length > 0) {
+            <div>
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Nachmittag</p>
+              <div class="flex flex-wrap gap-2">
+                @for (time of afternoonSlots(); track time) {
+                  <button type="button" (click)="selectTimeSlot(time)"
+                          class="px-3 sm:px-4 py-2 rounded-lg font-semibold text-xs sm:text-sm border transition-all duration-200"
+                          [ngClass]="{
+                            'bg-ink-teal text-white border-ink-teal shadow-md': selectedTimeSlot() === time,
+                            'bg-white text-gray-700 border-gray-200 hover:border-warm-brass hover:text-ink-teal hover:bg-orange-50': selectedTimeSlot() !== time
+                          }">
+                    {{ time }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
         </div>
-      </div>
+      }
 
-      <div *ngIf="!isLoadingSlots && availableSlots.length === 0 && newAppointmentForm.value.doctorId && newAppointmentForm.value.appointmentDate"
-           class="bg-red-50 p-4 rounded-xl border border-red-100 flex items-start gap-3">
-        <i class="pi pi-info-circle text-status-brick mt-0.5"></i>
-        <p class="text-status-brick text-xs sm:text-sm font-medium">An diesem Tag sind leider keine Termine mehr verfügbar. Bitte wähle ein anderes Datum.</p>
-      </div>
+      @if (!isLoadingSlots() && availableSlots().length === 0 && newAppointmentForm.value.doctorId && newAppointmentForm.value.appointmentDate) {
+        <div class="bg-red-50 p-4 rounded-xl border border-red-100 flex items-start gap-3">
+          <i class="pi pi-info-circle text-status-brick mt-0.5"></i>
+          <p class="text-status-brick text-xs sm:text-sm font-medium">An diesem Tag sind leider keine Termine mehr verfügbar. Bitte wähle ein anderes Datum.</p>
+        </div>
+      }
 
-      <div *ngIf="selectedDoctor && selectedTimeSlot && newAppointmentForm.value.appointmentDate"
-           class="bg-warm-brass/10 border border-warm-brass/30 rounded-xl px-4 py-3 text-xs sm:text-sm text-ink-teal">
-        Du buchst <strong>Dr. {{ selectedDoctor.label.split(' ')[1] }}</strong>
-        ({{ selectedDoctor.specialty }}) am
-        <strong>{{ newAppointmentForm.value.appointmentDate | date:'dd.MM.yyyy' }} um {{ selectedTimeSlot }}</strong>.
-      </div>
+      @if (selectedDoctor(); as doctor) {
+        @if (selectedTimeSlot() && newAppointmentForm.value.appointmentDate) {
+          <div class="bg-warm-brass/10 border border-warm-brass/30 rounded-xl px-4 py-3 text-xs sm:text-sm text-ink-teal">
+            Du buchst <strong>Dr. {{ doctor.label.split(' ')[1] }}</strong>
+            ({{ doctor.specialty }}) am
+            <strong>{{ newAppointmentForm.value.appointmentDate | date:'dd.MM.yyyy' }} um {{ selectedTimeSlot() }}</strong>.
+          </div>
+        }
+      }
 
       <p-button
         type="submit"
-        [label]="isRescheduleMode ? 'Termin verschieben' : 'Termin verbindlich buchen'"
+        [label]="isRescheduleMode() ? 'Termin verschieben' : 'Termin verbindlich buchen'"
         icon="pi pi-check"
-        [loading]="isBooking"
+        [loading]="isBooking()"
         [disabled]="newAppointmentForm.invalid"
         styleClass="w-full mt-2 h-[52px] rounded-xl shadow-md font-bold text-base sm:text-lg text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all">
       </p-button>
