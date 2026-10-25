@@ -13,15 +13,19 @@
         <span class="hidden lg:block font-medium">Dashboard</span>
       </a>
 
-      <a *ngIf="userRole === 'ROLE_DOCTOR'" class="flex items-center gap-4 py-3 px-4 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition-colors cursor-pointer" (click)="openSchedule.emit()">
-        <i class="pi pi-clock text-lg"></i>
-        <span class="hidden lg:block font-medium">Arbeitszeiten</span>
-      </a>
+      @if (userRole() === 'ROLE_DOCTOR') {
+        <a class="flex items-center gap-4 py-3 px-4 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition-colors cursor-pointer" (click)="openSchedule.emit()">
+          <i class="pi pi-clock text-lg"></i>
+          <span class="hidden lg:block font-medium">Arbeitszeiten</span>
+        </a>
+      }
 
-      <a *ngIf="userRole === 'ROLE_PATIENT'" class="flex items-center gap-4 py-3 px-4 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition-colors cursor-pointer" (click)="openNewAppointment.emit()">
-        <i class="pi pi-calendar-plus text-lg"></i>
-        <span class="hidden lg:block font-medium">Neuer Termin</span>
-      </a>
+      @if (userRole() === 'ROLE_PATIENT') {
+        <a class="flex items-center gap-4 py-3 px-4 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition-colors cursor-pointer" (click)="openNewAppointment.emit()">
+          <i class="pi pi-calendar-plus text-lg"></i>
+          <span class="hidden lg:block font-medium">Neuer Termin</span>
+        </a>
+      }
     </nav>
   </div>
 
