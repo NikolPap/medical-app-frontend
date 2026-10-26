@@ -7,17 +7,15 @@ Backend: [medical-app-backend](https://github.com/NikolPap/medical-app-backend)
 
 > **Demo-Projekt.** Keine echten Patientendaten eingeben.
 
-
 ## Screenshots
 
 | Arzt-Dashboard | Patienten-Dashboard |
-
+|---|---|
 | ![Arzt-Dashboard](docs/screenshots/doctor-dashboard.png) | ![Patienten-Dashboard](docs/screenshots/patient-dashboard.png) |
 
 | Termin buchen | Einstellungen & Arbeitszeiten | Mobil |
-
+|---|---|---|
 | ![Termin buchen](docs/screenshots/book-appointment.png) | ![Einstellungen](docs/screenshots/doctor-settings.png) | ![Mobil](docs/screenshots/mobile.png) |
-
 
 ## Features
 
@@ -67,7 +65,7 @@ docker run --rm -p 4200:80 medsync-frontend
 
 - **Signals statt manueller Updates:** Gefilterte und paginierte Listen sind `computed()`-Werte.
   Es gibt keine `update…()`-Methoden mehr, die man nach einer Änderung vergessen könnte.
-- **Smart/Dumb-Split:** Das Dashboard-Template schrumpfte von ~450 auf ~55 Zeilen.
+- **Smart/Dumb-Split:** Das Dashboard-Template schrumpfte von ~450 auf ~75 Zeilen.
 - **Token im localStorage:** einfach für eine SPA; bekanntes XSS-Risiko,
   Alternative wäre ein httpOnly-Cookie.
 - **Role-Guard prüft auch `exp`:** abgelaufene Tokens führen zum Login statt zu 401-Fehlern.
