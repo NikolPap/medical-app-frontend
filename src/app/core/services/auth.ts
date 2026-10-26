@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiResponse } from '../models/appointment.model';
@@ -9,7 +9,7 @@ import { ApiResponse } from '../models/appointment.model';
 export class AuthService {
   private readonly API_URL = 'http://localhost:8080/api/auth';
 
-  constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
    
   login(loginData: unknown): Observable<ApiResponse>  {
     return this.http.post<ApiResponse>(`${this.API_URL}/login`, loginData, {withCredentials:true});

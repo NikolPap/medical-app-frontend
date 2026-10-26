@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Location } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { LegalFooterComponent } from '../../../shared/legal-footer/legal-footer';
@@ -10,7 +10,7 @@ import { LegalFooterComponent } from '../../../shared/legal-footer/legal-footer'
   templateUrl: './impressum.html'
 })
 export class ImpressumComponent {
-  constructor(private location: Location) {}
+  private readonly location = inject(Location);
 
   get homeLink(): string {
     return localStorage.getItem('jwt_token') ? '/dashboard' : '/login';

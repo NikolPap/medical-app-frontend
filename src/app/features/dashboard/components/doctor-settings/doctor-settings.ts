@@ -1,230 +1,221 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, computed, inject, output, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { DatePipe, NgClass } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { AppointmentService } from '../../../../core/services/appointment';
-import { ScheduleService } from '../../../../core/services/schedule';
-import { HolidayService } from '../../../../core/services/holiday';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { DoctorSchedule } from '../../../../core/models/appointment.model';
-import { DoctorHoliday } from '../../../../core/models/appointment.model';
- 
 import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
- 
-const DAY_ORDER: { [key: string]: number } = {
-  MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4, FRIDAY: 5, SATURDAY: 6, SUNDAY: 7
-};
- 
-const DAY_LABELS: { [key: string]: string } = {
+
+import { AppointmentService } from '../../../../core/services/appointment';
+import { ScheduleService } from '../../../../core/services/schedule';
+import { HolidayService } from '../../../../core/services/holiday';
+import { DoctorSchedule, DoctorHoliday, DoctorInfo } from '../../../../core/models/appointment.model';
+
+const DAY_LABELS: Record<string, string> = {
   MONDAY: 'Mo', TUESDAY: 'Di', WEDNESDAY: 'Mi', THURSDAY: 'Do', FRIDAY: 'Fr', SATURDAY: 'Sa', SUNDAY: 'So'
 };
- 
+
+const WEEK_DAY_KEYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+
+interface HolidayGroup {
+  startDate: string;
+  endDate: string;
+  ids: number[];
+}
+
+// Felder, die das Backend liefert, aber im Basis-Modell evtl. nicht stehen
+type DoctorWithSlot = DoctorInfo & { email?: string; slotDuration?: number };
+
+const toIsoDate = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+const toMinutes = (time: string): number => {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+};
+
 @Component({
   selector: 'app-doctor-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, DialogModule, SelectModule, DatePickerModule, ButtonModule, TooltipModule, ConfirmDialogModule],
+  imports: [
+    NgClass, DatePipe, ReactiveFormsModule, FormsModule,
+    DialogModule, SelectModule, DatePickerModule, ButtonModule, TooltipModule, ConfirmDialogModule
+  ],
   providers: [ConfirmationService],
   templateUrl: './doctor-settings.html'
 })
 export class DoctorSettingsComponent implements OnInit {
- 
-  @Output() settingsChanged = new EventEmitter<void>();
- 
-  showDialog: boolean = false;
-  minDate: Date = new Date();
- 
+  private readonly fb = inject(FormBuilder);
+  private readonly appointmentService = inject(AppointmentService);
+  private readonly scheduleService = inject(ScheduleService);
+  private readonly holidayService = inject(HolidayService);
+  private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
+
+  readonly settingsChanged = output<void>();
+
+  readonly showDialog = signal(false);
+  readonly minDate = new Date();
+
   // --- DAUER ---
-  durationOptions = [
-    { label: '10 Minuten', value: 10 }, { label: '15 Minuten', value: 15 },
-    { label: '20 Minuten', value: 20 }, { label: '30 Minuten', value: 30 },
-    { label: '40 Minuten', value: 40 }, { label: '45 Minuten', value: 45 },
-    { label: '60 Minuten', value: 60 }
-  ];
-  selectedDuration: number = 30;
-  isSavingDuration: boolean = false;
- 
+  readonly durationOptions = [10, 15, 20, 30, 40, 45, 60].map(v => ({ label: `${v} Minuten`, value: v }));
+  readonly selectedDuration = signal(30);
+  readonly isSavingDuration = signal(false);
+
   // --- URLAUB ---
-  blockedDate: Date | Date[] | null = null;
-  myHolidays: DoctorHoliday[] = [];
-  groupedHolidays: { startDate: string, endDate: string, ids: number[] }[] = [];
-  isSavingHoliday: boolean = false;
- 
+  readonly blockedDate = signal<Date | Date[] | null>(null);
+  readonly myHolidays = signal<DoctorHoliday[]>([]);
+  readonly isSavingHoliday = signal(false);
+
+  /** Aufeinanderfolgende Urlaubstage werden zu einem Zeitraum zusammengefasst */
+  readonly groupedHolidays = computed<HolidayGroup[]>(() => {
+    const sorted = [...this.myHolidays()].sort(
+      (a, b) => new Date(a.holidayDate).getTime() - new Date(b.holidayDate).getTime()
+    );
+    if (sorted.length === 0) return [];
+
+    const groups: HolidayGroup[] = [];
+    let current: HolidayGroup = { startDate: sorted[0].holidayDate, endDate: sorted[0].holidayDate, ids: [sorted[0].id] };
+
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = new Date(sorted[i - 1].holidayDate);
+      const next = new Date(sorted[i].holidayDate);
+      const diffDays = Math.ceil(Math.abs(next.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) {
+        current.endDate = sorted[i].holidayDate;
+        current.ids.push(sorted[i].id);
+      } else {
+        groups.push(current);
+        current = { startDate: sorted[i].holidayDate, endDate: sorted[i].holidayDate, ids: [sorted[i].id] };
+      }
+    }
+    groups.push(current);
+    return groups;
+  });
+
   // --- SCHICHTEN ---
-  scheduleForm: FormGroup;
-  mySchedule: DoctorSchedule[] = [];
-  groupedSchedule: { dayOfWeek: string, shifts: DoctorSchedule[] }[] = [];
-  editingScheduleId: number | null = null;
-  isSavingSchedule: boolean = false;
- 
-  // --- WEEKLY GRID (abgeleitet aus mySchedule) ---
-  readonly weekDayKeys = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
- 
-  get weekGrid(): { key: string, label: string, shifts: DoctorSchedule[] }[] {
-    return this.weekDayKeys.map(key => ({
+  readonly scheduleForm: FormGroup = this.fb.group({
+    dayOfWeek: ['', Validators.required],
+    startTime: [null, Validators.required],
+    endTime: [null, Validators.required]
+  });
+  readonly mySchedule = signal<DoctorSchedule[]>([]);
+  readonly editingScheduleId = signal<number | null>(null);
+  readonly isSavingSchedule = signal(false);
+
+  readonly weekDayKeys = WEEK_DAY_KEYS;
+
+  readonly weekGrid = computed(() =>
+    WEEK_DAY_KEYS.map(key => ({
       key,
       label: DAY_LABELS[key],
-      shifts: this.mySchedule
+      shifts: this.mySchedule()
         .filter(s => s.dayOfWeek === key)
         .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''))
-    }));
-  }
- 
+    }))
+  );
+
   // --- KOPIEREN AUF ANDERE TAGE ---
-  showCopyPanel: boolean = false;
-  copySourceDay: string | null = null;
-  copyTargetDays: string[] = [];
-  isCopying: boolean = false;
- 
-  constructor(
-    private fb: FormBuilder,
-    private appointmentService: AppointmentService,
-    private scheduleService: ScheduleService,
-    private holidayService: HolidayService,
-    private messageService: MessageService,
-    private confirmationService: ConfirmationService
-  ) {
-    this.scheduleForm = this.fb.group({
-      dayOfWeek: ['', Validators.required],
-      startTime: [null, Validators.required],
-      endTime: [null, Validators.required]
-    });
-  }
- 
-  ngOnInit() {
+  /** Das Kopier-Panel ist sichtbar, sobald ein Quelltag gesetzt ist */
+  readonly copySourceDay = signal<string | null>(null);
+  readonly copyTargetDays = signal<string[]>([]);
+  readonly isCopying = signal(false);
+
+  ngOnInit(): void {
     this.loadDoctorDuration();
   }
- 
-  openDialog() {
+
+  openDialog(): void {
     this.loadMySchedule();
     this.loadMyHolidays();
-    this.showDialog = true;
+    this.showDialog.set(true);
   }
- 
+
+  dayLabel(key: string): string {
+    return DAY_LABELS[key] || key;
+  }
+
   // ==========================================
   // DAUER
   // ==========================================
-  loadDoctorDuration() {
+  private loadDoctorDuration(): void {
     this.appointmentService.getAllDoctors().subscribe({
-      next: (docs) => {
+      next: (docs: DoctorInfo[]) => {
         const token = localStorage.getItem('jwt_token');
-        if (token) {
-          const myEmail = JSON.parse(atob(token.split('.')[1])).sub;
-          const me = docs.find((d: any) => d.email === myEmail);
-          if (me && me.slotDuration) {
-            this.selectedDuration = me.slotDuration;
-          }
-        }
+        if (!token) return;
+
+        const myEmail = JSON.parse(atob(token.split('.')[1])).sub;
+        const me = (docs as DoctorWithSlot[]).find(d => d.email === myEmail);
+        if (me?.slotDuration) this.selectedDuration.set(me.slotDuration);
       }
     });
   }
- 
-  saveDuration() {
-    this.isSavingDuration = true;
-    this.scheduleService.updateSlotDuration(this.selectedDuration).subscribe({
+
+  saveDuration(): void {
+    this.isSavingDuration.set(true);
+    const minutes = this.selectedDuration();
+
+    this.scheduleService.updateSlotDuration(minutes).subscribe({
       next: () => {
-        this.isSavingDuration = false;
-        this.messageService.add({ severity: 'success', summary: 'Erfolg', detail: `Dauer auf ${this.selectedDuration} Min. geändert!` });
+        this.isSavingDuration.set(false);
+        this.messageService.add({ severity: 'success', summary: 'Erfolg', detail: `Dauer auf ${minutes} Min. geändert!` });
       },
-      error: (err: { error: { message: string } }) => {
-        this.isSavingDuration = false;
+      error: (err: HttpErrorResponse) => {
+        this.isSavingDuration.set(false);
         this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Konnte Dauer nicht ändern.' });
       }
     });
   }
- 
+
   // ==========================================
   // URLAUB
   // ==========================================
-  loadMyHolidays() {
+  private loadMyHolidays(): void {
     this.holidayService.getMyHolidays().subscribe({
-      next: (data: DoctorHoliday[]) => {
-        this.myHolidays = data;
-        this.groupHolidays(data);
-      }
+      next: (data: DoctorHoliday[]) => this.myHolidays.set(data)
     });
   }
- 
-  groupHolidays(holidays: DoctorHoliday[]) {
-    if (!holidays || holidays.length === 0) {
-      this.groupedHolidays = [];
-      return;
-    }
-    const sorted = [...holidays].sort((a, b) => new Date(a.holidayDate).getTime() - new Date(b.holidayDate).getTime());
-    const grouped: { startDate: string, endDate: string, ids: number[] }[] = [];
-    let currentGroup = { startDate: sorted[0].holidayDate, endDate: sorted[0].holidayDate, ids: [sorted[0].id] };
- 
-    for (let i = 1; i < sorted.length; i++) {
-      const current = sorted[i];
-      const previousDate = new Date(sorted[i - 1].holidayDate);
-      const currentDate = new Date(current.holidayDate);
-      const diffDays = Math.ceil(Math.abs(currentDate.getTime() - previousDate.getTime()) / (1000 * 60 * 60 * 24));
- 
-      if (diffDays === 1) {
-        currentGroup.endDate = current.holidayDate;
-        currentGroup.ids.push(current.id);
-      } else {
-        grouped.push(currentGroup);
-        currentGroup = { startDate: current.holidayDate, endDate: current.holidayDate, ids: [current.id] };
-      }
-    }
-    grouped.push(currentGroup);
-    this.groupedHolidays = grouped;
-  }
- 
-  get disabledHolidayDates(): Date[] {
-    return this.myHolidays.map(h => new Date(h.holidayDate));
-  }
- 
-  blockDay() {
-    if (!this.blockedDate) {
+
+  blockDay(): void {
+    const selected = this.blockedDate();
+    const first = Array.isArray(selected) ? selected[0] : selected;
+
+    if (!first) {
       this.messageService.add({ severity: 'warn', summary: 'Achtung', detail: 'Bitte wähle zuerst ein Datum aus!' });
       return;
     }
- 
-    let startDate: Date;
-    let endDate: Date;
- 
-    if (Array.isArray(this.blockedDate)) {
-      if (!this.blockedDate[0]) {
-        this.messageService.add({ severity: 'warn', summary: 'Achtung', detail: 'Bitte wähle zuerst ein Datum aus!' });
-        return;
-      }
-      startDate = this.blockedDate[0];
-      endDate = this.blockedDate[1] ? this.blockedDate[1] : this.blockedDate[0];
-    } else {
-      startDate = this.blockedDate;
-      endDate = this.blockedDate;
-    }
- 
-    const isAlreadyBlocked = this.myHolidays.some(h => {
-      const hDate = new Date(h.holidayDate);
-      hDate.setHours(0, 0, 0, 0);
-      const sDate = new Date(startDate);
-      sDate.setHours(0, 0, 0, 0);
-      const eDate = new Date(endDate);
-      eDate.setHours(0, 0, 0, 0);
-      return hDate.getTime() >= sDate.getTime() && hDate.getTime() <= eDate.getTime();
+
+    const startDate = first;
+    const endDate = Array.isArray(selected) && selected[1] ? selected[1] : first;
+
+    const startMs = new Date(startDate).setHours(0, 0, 0, 0);
+    const endMs = new Date(endDate).setHours(0, 0, 0, 0);
+
+    const isAlreadyBlocked = this.myHolidays().some(h => {
+      const t = new Date(h.holidayDate).setHours(0, 0, 0, 0);
+      return t >= startMs && t <= endMs;
     });
- 
+
     if (isAlreadyBlocked) {
       this.messageService.add({ severity: 'error', summary: 'Fehler', detail: 'Tage sind bereits blockiert!' });
       return;
     }
- 
-    const format = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const startStr = format(startDate);
-    const endStr = format(endDate);
- 
-    const message = startStr === endStr
-      ? `Möchtest du den ${startStr} blockieren?`
-      : `Möchtest du den Zeitraum ${startStr} bis ${endStr} blockieren?`;
- 
+
+    const startStr = toIsoDate(startDate);
+    const endStr = toIsoDate(endDate);
+
     this.confirmationService.confirm({
-      message,
+      message: startStr === endStr
+        ? `Möchtest du den ${startStr} blockieren?`
+        : `Möchtest du den Zeitraum ${startStr} bis ${endStr} blockieren?`,
       header: 'Urlaub eintragen',
       icon: 'pi pi-info-circle',
       acceptLabel: 'Ja, blockieren',
@@ -232,25 +223,25 @@ export class DoctorSettingsComponent implements OnInit {
       acceptButtonStyleClass: 'p-button-warning p-2 px-4 rounded-md',
       rejectButtonStyleClass: 'p-button-text p-2 px-4 rounded-md',
       accept: () => {
-        this.isSavingHoliday = true;
+        this.isSavingHoliday.set(true);
         this.holidayService.addHolidayRange(startStr, endStr).subscribe({
           next: () => {
-            this.isSavingHoliday = false;
+            this.isSavingHoliday.set(false);
             this.messageService.add({ severity: 'success', summary: 'Erfolg', detail: 'Urlaub eingetragen!' });
-            this.blockedDate = null;
+            this.blockedDate.set(null);
             this.loadMyHolidays();
             this.settingsChanged.emit();
           },
-          error: (err: { error: { message: string } }) => {
-            this.isSavingHoliday = false;
+          error: (err: HttpErrorResponse) => {
+            this.isSavingHoliday.set(false);
             this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Fehler beim Speichern.' });
           }
         });
       }
     });
   }
- 
-  deleteHoliday(holidayIds: number[]) {
+
+  deleteHoliday(holidayIds: number[]): void {
     this.confirmationService.confirm({
       message: 'Möchtest du diesen Urlaubszeitraum löschen?',
       header: 'Urlaub löschen',
@@ -260,120 +251,102 @@ export class DoctorSettingsComponent implements OnInit {
       acceptButtonStyleClass: 'p-button-danger p-2 px-4 rounded-md',
       rejectButtonStyleClass: 'p-button-text p-2 px-4 rounded-md',
       accept: () => {
-        let deletedCount = 0;
-        holidayIds.forEach(id => {
-          this.holidayService.deleteHoliday(id).subscribe({
-            next: () => {
-              deletedCount++;
-              if (deletedCount === holidayIds.length) {
-                this.messageService.add({ severity: 'success', summary: 'Erfolg', detail: 'Urlaubszeitraum gelöscht!' });
-                this.loadMyHolidays();
-                this.settingsChanged.emit();
-              }
-            }
-          });
+        forkJoin(holidayIds.map(id => this.holidayService.deleteHoliday(id))).subscribe({
+          next: () => {
+            this.messageService.add({ severity: 'success', summary: 'Erfolg', detail: 'Urlaubszeitraum gelöscht!' });
+            this.loadMyHolidays();
+            this.settingsChanged.emit();
+          },
+          error: (err: HttpErrorResponse) => {
+            this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Löschen fehlgeschlagen.' });
+            this.loadMyHolidays();
+          }
         });
       }
     });
   }
- 
+
   // ==========================================
   // SCHICHTEN
   // ==========================================
-  loadMySchedule() {
+  private loadMySchedule(): void {
     this.scheduleService.getMySchedule().subscribe({
-      next: (data: DoctorSchedule[]) => {
-        this.mySchedule = data;
-        this.rebuildGroupedSchedule();
-      },
-      error: (err) => console.error('Fehler beim Laden des Plans', err)
+      next: (data: DoctorSchedule[]) => this.mySchedule.set(data),
+      error: (err: HttpErrorResponse) => console.error('Fehler beim Laden des Plans', err)
     });
   }
- 
-  private rebuildGroupedSchedule() {
-    const groupedMap = new Map<string, DoctorSchedule[]>();
-    this.mySchedule.forEach((s: DoctorSchedule) => {
-      if (!groupedMap.has(s.dayOfWeek)) groupedMap.set(s.dayOfWeek, []);
-      groupedMap.get(s.dayOfWeek)?.push(s);
-    });
- 
-    this.groupedSchedule = Array.from(groupedMap.entries()).map(([day, shifts]) => {
-      shifts.sort((a: DoctorSchedule, b: DoctorSchedule) => (a?.startTime || '').localeCompare(b?.startTime || ''));
-      return { dayOfWeek: day, shifts };
-    }).sort((a, b) => DAY_ORDER[a.dayOfWeek] - DAY_ORDER[b.dayOfWeek]);
-  }
- 
-  private toMinutes(time: string): number {
-    const [h, m] = time.split(':').map(Number);
-    return h * 60 + m;
-  }
- 
+
   private hasOverlap(dayOfWeek: string, startTime: string, endTime: string, excludeId: number | null): boolean {
-    const newStart = this.toMinutes(startTime);
-    const newEnd = this.toMinutes(endTime);
- 
-    return this.mySchedule
+    const newStart = toMinutes(startTime);
+    const newEnd = toMinutes(endTime);
+
+    return this.mySchedule()
       .filter(s => s.dayOfWeek === dayOfWeek && s.id !== excludeId)
       .some(s => {
-        const existingStart = this.toMinutes(s.startTime.substring(0, 5));
-        const existingEnd = this.toMinutes(s.endTime.substring(0, 5));
+        const existingStart = toMinutes(s.startTime.substring(0, 5));
+        const existingEnd = toMinutes(s.endTime.substring(0, 5));
         return newStart < existingEnd && newEnd > existingStart;
       });
   }
- 
-  saveSchedule() {
+
+  saveSchedule(): void {
     if (this.scheduleForm.invalid) return;
- 
+
     const { dayOfWeek, startTime, endTime } = this.scheduleForm.value;
- 
+    const editingId = this.editingScheduleId();
+
     if (startTime >= endTime) {
       this.messageService.add({ severity: 'warn', summary: 'Ungültige Zeit', detail: 'Die Startzeit muss vor der Endzeit liegen.' });
       return;
     }
- 
-    if (this.hasOverlap(dayOfWeek, startTime, endTime, this.editingScheduleId)) {
+
+    if (this.hasOverlap(dayOfWeek, startTime, endTime, editingId)) {
       this.messageService.add({ severity: 'warn', summary: 'Überschneidung', detail: 'Diese Zeit überschneidet sich mit einer bestehenden Schicht an diesem Tag.' });
       return;
     }
- 
+
     const requestData = { dayOfWeek, startTime, endTime };
-    this.isSavingSchedule = true;
- 
-    // Εδώ είναι η νέα λογική: Χρησιμοποιούμε update αν υπάρχει ID, αλλιώς save
-    const request$ = this.editingScheduleId !== null
-      ? this.scheduleService.updateSchedule(this.editingScheduleId, requestData)
+    this.isSavingSchedule.set(true);
+
+    // Bearbeiten, wenn eine ID vorhanden ist, sonst neu anlegen
+    const request$ = editingId !== null
+      ? this.scheduleService.updateSchedule(editingId, requestData)
       : this.scheduleService.saveSchedule(requestData);
- 
+
     request$.subscribe({
       next: () => {
-        this.isSavingSchedule = false;
-        this.editingScheduleId = null;
+        this.isSavingSchedule.set(false);
+        this.editingScheduleId.set(null);
         this.messageService.add({ severity: 'success', summary: 'Erfolg', detail: 'Arbeitszeit gespeichert!' });
         this.scheduleForm.reset();
         this.loadMySchedule();
       },
-      error: (err: { error: { message: string } }) => {
-        this.isSavingSchedule = false;
+      error: (err: HttpErrorResponse) => {
+        this.isSavingSchedule.set(false);
         this.messageService.add({ severity: 'error', summary: 'Fehler', detail: err.error?.message || 'Fehler beim Speichern.' });
       }
     });
   }
- 
-  editSchedule(schedule: DoctorSchedule) {
-    this.editingScheduleId = schedule.id;
+
+  editSchedule(schedule: DoctorSchedule): void {
+    this.editingScheduleId.set(schedule.id);
     this.scheduleForm.patchValue({
       dayOfWeek: schedule.dayOfWeek,
       startTime: schedule.startTime.substring(0, 5),
       endTime: schedule.endTime.substring(0, 5)
     });
   }
- 
-  cancelEdit() {
-    this.editingScheduleId = null;
+
+  cancelEdit(): void {
+    this.editingScheduleId.set(null);
     this.scheduleForm.reset();
   }
- 
-  deleteSchedule(scheduleId: number) {
+
+  preselectDay(day: string): void {
+    this.scheduleForm.patchValue({ dayOfWeek: day });
+  }
+
+  deleteSchedule(scheduleId: number): void {
     this.confirmationService.confirm({
       message: 'Möchtest du diese Arbeitszeit wirklich löschen?',
       header: 'Bestätigung',
@@ -386,87 +359,81 @@ export class DoctorSettingsComponent implements OnInit {
         this.scheduleService.deleteSchedule(scheduleId).subscribe({
           next: () => {
             this.messageService.add({ severity: 'success', summary: 'Erfolg', detail: 'Arbeitszeit gelöscht!' });
-            if (this.editingScheduleId === scheduleId) this.cancelEdit();
+            if (this.editingScheduleId() === scheduleId) this.cancelEdit();
             this.loadMySchedule();
           }
         });
       }
     });
   }
- 
+
   // ==========================================
   // AUF ANDERE TAGE KOPIEREN
   // ==========================================
-  toggleCopyPanel(day: string) {
-    if (this.showCopyPanel && this.copySourceDay === day) {
-      this.showCopyPanel = false;
-      this.copySourceDay = null;
+  toggleCopyPanel(day: string): void {
+    if (this.copySourceDay() === day) {
+      this.closeCopyPanel();
       return;
     }
-    this.copySourceDay = day;
-    this.copyTargetDays = [];
-    this.showCopyPanel = true;
+    this.copySourceDay.set(day);
+    this.copyTargetDays.set([]);
   }
- 
-  toggleCopyTarget(day: string) {
-    if (day === this.copySourceDay) return;
-    const idx = this.copyTargetDays.indexOf(day);
-    if (idx > -1) this.copyTargetDays.splice(idx, 1);
-    else this.copyTargetDays.push(day);
+
+  closeCopyPanel(): void {
+    this.copySourceDay.set(null);
+    this.copyTargetDays.set([]);
   }
- 
-  applyCopy() {
-    if (!this.copySourceDay || this.copyTargetDays.length === 0) return;
- 
-    const sourceShifts = this.mySchedule.filter(s => s.dayOfWeek === this.copySourceDay);
+
+  toggleCopyTarget(day: string): void {
+    if (day === this.copySourceDay()) return;
+    this.copyTargetDays.update(days =>
+      days.includes(day) ? days.filter(d => d !== day) : [...days, day]
+    );
+  }
+
+  applyCopy(): void {
+    const source = this.copySourceDay();
+    const targets = this.copyTargetDays();
+    if (!source || targets.length === 0) return;
+
+    const sourceShifts = this.mySchedule().filter(s => s.dayOfWeek === source);
     if (sourceShifts.length === 0) return;
- 
-    const validTargets = this.copyTargetDays.filter(day =>
+
+    const validTargets = targets.filter(day =>
       sourceShifts.every(shift => !this.hasOverlap(day, shift.startTime.substring(0, 5), shift.endTime.substring(0, 5), null))
     );
-    const skipped = this.copyTargetDays.length - validTargets.length;
- 
+    const skipped = targets.length - validTargets.length;
+
     if (validTargets.length === 0) {
       this.messageService.add({ severity: 'warn', summary: 'Nicht möglich', detail: 'Alle Zieltage haben bereits überschneidende Schichten.' });
       return;
     }
- 
-    this.isCopying = true;
-    let remaining = validTargets.length * sourceShifts.length;
- 
-    validTargets.forEach(day => {
-      sourceShifts.forEach(shift => {
-        this.scheduleService.saveSchedule({
-          dayOfWeek: day,
-          startTime: shift.startTime.substring(0, 5),
-          endTime: shift.endTime.substring(0, 5)
-        }).subscribe({
-          next: () => {
-            remaining--;
-            if (remaining === 0) this.finishCopy(skipped);
-          },
-          error: () => {
-            remaining--;
-            if (remaining === 0) this.finishCopy(skipped);
-          }
-        });
+
+    this.isCopying.set(true);
+
+    const requests = validTargets.flatMap(day =>
+      sourceShifts.map(shift =>
+        this.scheduleService
+          .saveSchedule({
+            dayOfWeek: day,
+            startTime: shift.startTime.substring(0, 5),
+            endTime: shift.endTime.substring(0, 5)
+          })
+          .pipe(catchError(() => of(null)))   // ein Fehler soll die anderen nicht abbrechen
+      )
+    );
+
+    forkJoin(requests).subscribe(() => {
+      this.isCopying.set(false);
+      this.closeCopyPanel();
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Erfolg',
+        detail: skipped > 0
+          ? `Kopiert! ${skipped} Tag(e) übersprungen wegen Überschneidung.`
+          : 'Arbeitszeiten kopiert!'
       });
+      this.loadMySchedule();
     });
-  }
- 
-  private finishCopy(skipped: number) {
-    this.isCopying = false;
-    this.showCopyPanel = false;
-    this.copySourceDay = null;
-    this.copyTargetDays = [];
-    const msg = skipped > 0
-      ? `Kopiert! ${skipped} Tag(e) übersprungen wegen Überschneidung.`
-      : 'Arbeitszeiten kopiert!';
-    this.messageService.add({ severity: 'success', summary: 'Erfolg', detail: msg });
-    this.loadMySchedule();
-  }
- 
-  dayLabel(key: string): string {
-    return DAY_LABELS[key] || key;
   }
 }

@@ -1,5 +1,6 @@
 <!-- POP-UP: EINSTELLUNGEN & ARBEITSZEITEN -->
-<p-dialog header="Einstellungen & Arbeitszeiten" [modal]="true" [(visible)]="showDialog" [style]="{width: '90vw', maxWidth: '42rem'}" styleClass="rounded-3xl shadow-2xl">
+<p-dialog header="Einstellungen & Arbeitszeiten" [modal]="true" [(visible)]="showDialog"
+          [style]="{width: '90vw', maxWidth: '42rem'}" styleClass="rounded-3xl shadow-2xl">
 
   <p-confirmDialog
     [style]="{width: '90vw', maxWidth: '26rem'}"
@@ -14,7 +15,7 @@
     <div class="bg-cool-paper p-4 sm:p-5 rounded-2xl mb-6 border border-gray-100">
       <div class="flex justify-between items-center mb-4 gap-2">
         <h3 class="font-serif font-bold text-ink-teal text-base sm:text-lg"><i class="pi pi-clock mr-2 text-warm-brass"></i>Termin-Dauer</h3>
-        <span class="text-xs font-bold bg-white text-ink-teal px-3 py-1 rounded-full shadow-sm border border-gray-100 whitespace-nowrap">Aktuell: {{ selectedDuration }} Min</span>
+        <span class="text-xs font-bold bg-white text-ink-teal px-3 py-1 rounded-full shadow-sm border border-gray-100 whitespace-nowrap">Aktuell: {{ selectedDuration() }} Min</span>
       </div>
 
       <div class="flex flex-col sm:flex-row gap-3 items-stretch">
@@ -29,7 +30,7 @@
         <p-button
           label="Speichern"
           icon="pi pi-check"
-          [loading]="isSavingDuration"
+          [loading]="isSavingDuration()"
           (onClick)="saveDuration()"
           styleClass="h-[44px] px-6 rounded-xl font-bold text-white bg-ink-teal hover:bg-ink-teal/90 border-none transition-all shadow-md w-full sm:w-auto">
         </p-button>
@@ -58,41 +59,52 @@
         <p-button
           label="Blockieren"
           icon="pi pi-ban"
-          [loading]="isSavingHoliday"
+          [loading]="isSavingHoliday()"
           (onClick)="blockDay()"
           styleClass="h-[44px] px-6 whitespace-nowrap rounded-xl font-bold text-white bg-status-brick hover:bg-status-brick/90 border-none transition-all shadow-md w-full sm:w-auto">
         </p-button>
       </div>
 
-      <div class="mt-6" *ngIf="groupedHolidays.length > 0">
-        <h4 class="font-bold text-gray-600 text-xs uppercase tracking-wider mb-3">Gebuchte Urlaube</h4>
-        <ul class="text-sm text-gray-700 flex flex-col gap-2 max-h-40 overflow-y-auto pr-2">
-          <li *ngFor="let group of groupedHolidays" class="flex justify-between items-center py-2 px-3 sm:px-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-shadow gap-2">
-            <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-              <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-status-brick flex-shrink-0"><i class="pi pi-calendar"></i></div>
-              <span class="font-semibold text-gray-800 text-xs sm:text-sm truncate" *ngIf="group.startDate === group.endDate">{{ group.startDate | date:'dd.MM.yyyy' }}</span>
-              <span class="font-semibold text-gray-800 text-xs sm:text-sm truncate" *ngIf="group.startDate !== group.endDate">{{ group.startDate | date:'dd.MM.yyyy' }} <span class="text-gray-400 mx-1 font-normal">bis</span> {{ group.endDate | date:'dd.MM.yyyy' }}</span>
-            </div>
-            <p-button icon="pi pi-trash" [text]="true" [rounded]="true" pTooltip="Löschen" (click)="deleteHoliday(group.ids)" styleClass="text-status-brick hover:bg-red-50 flex-shrink-0"></p-button>
-          </li>
-        </ul>
-      </div>
+      @if (groupedHolidays().length > 0) {
+        <div class="mt-6">
+          <h4 class="font-bold text-gray-600 text-xs uppercase tracking-wider mb-3">Gebuchte Urlaube</h4>
+          <ul class="text-sm text-gray-700 flex flex-col gap-2 max-h-40 overflow-y-auto pr-2">
+            @for (group of groupedHolidays(); track group.ids[0]) {
+              <li class="flex justify-between items-center py-2 px-3 sm:px-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-shadow gap-2">
+                <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-status-brick flex-shrink-0"><i class="pi pi-calendar"></i></div>
+                  @if (group.startDate === group.endDate) {
+                    <span class="font-semibold text-gray-800 text-xs sm:text-sm truncate">{{ group.startDate | date:'dd.MM.yyyy' }}</span>
+                  } @else {
+                    <span class="font-semibold text-gray-800 text-xs sm:text-sm truncate">{{ group.startDate | date:'dd.MM.yyyy' }} <span class="text-gray-400 mx-1 font-normal">bis</span> {{ group.endDate | date:'dd.MM.yyyy' }}</span>
+                  }
+                </div>
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" pTooltip="Löschen" (click)="deleteHoliday(group.ids)" styleClass="text-status-brick hover:bg-red-50 flex-shrink-0"></p-button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
     </div>
 
     <!-- NEUE SCHICHT HINZUFÜGEN -->
     <div class="mb-6">
       <div class="flex items-center justify-between border-b border-gray-100 pb-2 mb-4 gap-2">
         <h3 class="font-serif font-bold text-ink-teal text-base sm:text-lg">
-          {{ editingScheduleId !== null ? 'Arbeitszeit bearbeiten' : 'Neue Arbeitszeit hinzufügen' }}
+          {{ editingScheduleId() !== null ? 'Arbeitszeit bearbeiten' : 'Neue Arbeitszeit hinzufügen' }}
         </h3>
-        <button *ngIf="editingScheduleId !== null" (click)="cancelEdit()" class="text-xs font-semibold text-gray-500 hover:text-ink-teal flex items-center gap-1 whitespace-nowrap">
-          <i class="pi pi-times text-[10px]"></i> Abbrechen
-        </button>
+        @if (editingScheduleId() !== null) {
+          <button type="button" (click)="cancelEdit()" class="text-xs font-semibold text-gray-500 hover:text-ink-teal flex items-center gap-1 whitespace-nowrap">
+            <i class="pi pi-times text-[10px]"></i> Abbrechen
+          </button>
+        }
       </div>
 
-      <div *ngIf="editingScheduleId !== null" class="bg-warm-brass/10 border border-warm-brass/30 text-xs text-ink-teal rounded-xl px-4 py-2 mb-4 flex items-center gap-2">
-        <i class="pi pi-pencil text-warm-brass"></i> Du bearbeitest gerade eine bestehende Schicht.
-      </div>
+      @if (editingScheduleId() !== null) {
+        <div class="bg-warm-brass/10 border border-warm-brass/30 text-xs text-ink-teal rounded-xl px-4 py-2 mb-4 flex items-center gap-2">
+          <i class="pi pi-pencil text-warm-brass"></i> Du bearbeitest gerade eine bestehende Schicht.
+        </div>
+      }
 
       <form [formGroup]="scheduleForm" (ngSubmit)="saveSchedule()" class="flex flex-col gap-4">
 
@@ -123,9 +135,9 @@
 
         <p-button
           type="submit"
-          [label]="editingScheduleId !== null ? 'Änderung speichern' : 'Schicht speichern'"
+          [label]="editingScheduleId() !== null ? 'Änderung speichern' : 'Schicht speichern'"
           icon="pi pi-save"
-          [loading]="isSavingSchedule"
+          [loading]="isSavingSchedule()"
           [disabled]="scheduleForm.invalid"
           styleClass="w-full h-[44px] mt-1 rounded-xl shadow-md font-bold text-ink-teal bg-warm-brass hover:bg-warm-brass-dark border-none transition-all">
         </p-button>
@@ -136,66 +148,78 @@
     <div class="border-t border-gray-100 pt-6">
       <h3 class="font-serif font-bold text-ink-teal text-base sm:text-lg mb-4">Mein aktueller Plan</h3>
 
-      <div *ngIf="mySchedule.length === 0" class="text-center p-6 bg-gray-50 rounded-2xl text-gray-400 italic border border-gray-100 mb-4">
-        Du hast noch keine Arbeitszeiten eingetragen.
-      </div>
+      @if (mySchedule().length === 0) {
+        <div class="text-center p-6 bg-gray-50 rounded-2xl text-gray-400 italic border border-gray-100 mb-4">
+          Du hast noch keine Arbeitszeiten eingetragen.
+        </div>
+      } @else {
+        <!-- Horizontal scroll auf kleinen Screens, damit die 7 Spalten lesbar bleiben -->
+        <div class="overflow-x-auto -mx-1 px-1 pb-2 mb-4">
+          <div class="grid grid-cols-7 gap-2 min-w-[520px]">
+            @for (day of weekGrid(); track day.key) {
+              <div class="flex flex-col gap-1.5">
+                <p class="text-[11px] font-semibold text-gray-400 text-center uppercase">{{ day.label }}</p>
 
-      <!-- Horizontal scroll auf kleinen Screens, damit die 7 Spalten lesbar bleiben -->
-      <div *ngIf="mySchedule.length > 0" class="overflow-x-auto -mx-1 px-1 pb-2 mb-4">
-        <div class="grid grid-cols-7 gap-2 min-w-[520px]">
-          <div *ngFor="let day of weekGrid" class="flex flex-col gap-1.5">
-            <p class="text-[11px] font-semibold text-gray-400 text-center uppercase">{{ day.label }}</p>
+                @if (day.shifts.length === 0) {
+                  <div (click)="preselectDay(day.key)"
+                       class="border border-dashed border-gray-200 rounded-lg h-9 flex items-center justify-center text-gray-300 hover:border-warm-brass hover:text-warm-brass cursor-pointer transition-colors text-sm">
+                    +
+                  </div>
+                }
 
-            <div *ngIf="day.shifts.length === 0"
-                 (click)="scheduleForm.patchValue({dayOfWeek: day.key})"
-                 class="border border-dashed border-gray-200 rounded-lg h-9 flex items-center justify-center text-gray-300 hover:border-warm-brass hover:text-warm-brass cursor-pointer transition-colors text-sm">
-              +
-            </div>
+                @for (shift of day.shifts; track shift.id) {
+                  <div class="group relative bg-cool-paper rounded-lg px-1.5 py-1.5 text-center cursor-pointer hover:bg-warm-brass/10 transition-colors"
+                       (click)="editSchedule(shift)">
+                    <p class="text-[10px] font-semibold text-ink-teal leading-tight">{{ shift.startTime.substring(0,5) }}</p>
+                    <p class="text-[10px] text-gray-400 leading-tight">{{ shift.endTime.substring(0,5) }}</p>
+                    <button type="button" (click)="$event.stopPropagation(); deleteSchedule(shift.id)"
+                            class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-status-brick text-white text-[9px] items-center justify-center hidden group-hover:flex">
+                      ×
+                    </button>
+                  </div>
+                }
 
-            <div *ngFor="let shift of day.shifts"
-                 class="group relative bg-cool-paper rounded-lg px-1.5 py-1.5 text-center cursor-pointer hover:bg-warm-brass/10 transition-colors"
-                 (click)="editSchedule(shift)">
-              <p class="text-[10px] font-semibold text-ink-teal leading-tight">{{ shift.startTime.substring(0,5) }}</p>
-              <p class="text-[10px] text-gray-400 leading-tight">{{ shift.endTime.substring(0,5) }}</p>
-              <button (click)="$event.stopPropagation(); deleteSchedule(shift.id)"
-                      class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-status-brick text-white text-[9px] items-center justify-center hidden group-hover:flex">
-                ×
-              </button>
-            </div>
-
-            <button *ngIf="day.shifts.length > 0" (click)="toggleCopyPanel(day.key)"
-                    class="text-[10px] text-gray-400 hover:text-warm-brass flex items-center justify-center gap-1 mt-0.5">
-              <i class="pi pi-copy text-[9px]"></i>
-            </button>
+                @if (day.shifts.length > 0) {
+                  <button type="button" (click)="toggleCopyPanel(day.key)"
+                          class="text-[10px] text-gray-400 hover:text-warm-brass flex items-center justify-center gap-1 mt-0.5">
+                    <i class="pi pi-copy text-[9px]"></i>
+                  </button>
+                }
+              </div>
+            }
           </div>
         </div>
-      </div>
+      }
 
       <!-- COPY PANEL -->
-      <div *ngIf="showCopyPanel" class="bg-cool-paper rounded-xl p-4 border border-gray-100">
-        <p class="text-xs font-semibold text-ink-teal mb-3">
-          "{{ dayLabel(copySourceDay!) }}" kopieren auf:
-        </p>
-        <div class="flex flex-wrap gap-2 mb-4">
-          <button *ngFor="let day of weekDayKeys" [disabled]="day === copySourceDay"
-                  (click)="toggleCopyTarget(day)"
-                  class="text-xs px-3 py-1.5 rounded-full border transition-colors"
-                  [ngClass]="{
-                    'bg-ink-teal text-white border-ink-teal': copyTargetDays.includes(day),
-                    'bg-white text-gray-500 border-gray-200 hover:border-warm-brass': !copyTargetDays.includes(day) && day !== copySourceDay,
-                    'bg-gray-100 text-gray-300 border-gray-100 cursor-not-allowed': day === copySourceDay
-                  }">
-            {{ dayLabel(day) }}
-          </button>
+      @if (copySourceDay(); as source) {
+        <div class="bg-cool-paper rounded-xl p-4 border border-gray-100">
+          <p class="text-xs font-semibold text-ink-teal mb-3">
+            "{{ dayLabel(source) }}" kopieren auf:
+          </p>
+          <div class="flex flex-wrap gap-2 mb-4">
+            @for (day of weekDayKeys; track day) {
+              <button type="button" [disabled]="day === source"
+                      (click)="toggleCopyTarget(day)"
+                      class="text-xs px-3 py-1.5 rounded-full border transition-colors"
+                      [ngClass]="{
+                        'bg-ink-teal text-white border-ink-teal': copyTargetDays().includes(day),
+                        'bg-white text-gray-500 border-gray-200 hover:border-warm-brass': !copyTargetDays().includes(day) && day !== source,
+                        'bg-gray-100 text-gray-300 border-gray-100 cursor-not-allowed': day === source
+                      }">
+                {{ dayLabel(day) }}
+              </button>
+            }
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <p-button label="Kopieren" icon="pi pi-copy" [loading]="isCopying()" [disabled]="copyTargetDays().length === 0"
+                      (onClick)="applyCopy()"
+                      styleClass="px-5 h-[38px] rounded-xl font-bold text-white bg-ink-teal hover:bg-ink-teal/90 border-none text-sm w-full sm:w-auto"></p-button>
+            <p-button label="Abbrechen" [text]="true" (onClick)="closeCopyPanel()"
+                      styleClass="px-4 h-[38px] rounded-xl text-sm text-gray-500 w-full sm:w-auto"></p-button>
+          </div>
         </div>
-        <div class="flex flex-col sm:flex-row gap-2">
-          <p-button label="Kopieren" icon="pi pi-copy" [loading]="isCopying" [disabled]="copyTargetDays.length === 0"
-                     (onClick)="applyCopy()"
-                     styleClass="px-5 h-[38px] rounded-xl font-bold text-white bg-ink-teal hover:bg-ink-teal/90 border-none text-sm w-full sm:w-auto"></p-button>
-          <p-button label="Abbrechen" [text]="true" (onClick)="showCopyPanel = false"
-                     styleClass="px-4 h-[38px] rounded-xl text-sm text-gray-500 w-full sm:w-auto"></p-button>
-        </div>
-      </div>
+      }
     </div>
 
   </div>

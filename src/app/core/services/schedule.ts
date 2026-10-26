@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { DoctorSchedule, ApiResponse } from '../models/appointment.model';
@@ -10,7 +10,7 @@ export class ScheduleService {
 
   private readonly API_URL = 'http://localhost:8080/api/schedules';
 
-  constructor(private http: HttpClient) { }
+  private readonly http = inject(HttpClient);
 
   saveSchedule(scheduleData: unknown): Observable<ApiResponse> {
     return this.http.post<ApiResponse>(this.API_URL, scheduleData);

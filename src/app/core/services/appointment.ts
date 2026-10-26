@@ -1,9 +1,10 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Appointment } from '../models/appointment.model';
 import { ApiResponse } from '../models/appointment.model';
 import { DoctorInfo } from '../models/appointment.model';
+
 
 @Injectable({
   providedIn: 'root',
@@ -11,7 +12,7 @@ import { DoctorInfo } from '../models/appointment.model';
 export class AppointmentService {
   private readonly API_URL = 'http://localhost:8080/api/appointments';
 
-  constructor(private http: HttpClient) {}
+private readonly http = inject(HttpClient);
 
   // 1. Termine holen (Token wird jetzt automatisch vom Interceptor hinzugefügt!)
   getMyAppointments(): Observable<Appointment[]> {
