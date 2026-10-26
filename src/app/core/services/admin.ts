@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { ApiResponse, PendingDoctor } from '../models/appointment.model';
 
 @Injectable({ providedIn: 'root' })
+
 export class AdminService {
   private readonly API_URL = 'http://localhost:8080/api/admin';
 
